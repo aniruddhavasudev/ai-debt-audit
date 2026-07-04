@@ -91,6 +91,7 @@ That's a real run, not a mockup. You get a Markdown report with every finding an
 ```bash
 aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json scores.json]
                            [--sarif results.sarif] [--fail-on-score N] [--pdf report.pdf]
+                           [--history history.json] [--diff base-ref]
 ```
 
 `--out` picks where the Markdown goes (`./ai-debt-report.md` if you don't say). `--html` does the same for the HTML version — pass `--html ""` if you don't want one. `--json` dumps the raw numbers, useful if you want to track a score over time instead of just reading one report. `--sarif` writes GitHub's native code-scanning format (see the GitHub Action below). `--fail-on-score N` exits non-zero if the composite score is `>= N` — the hook a CI pipeline needs to actually block something, not just print a number. `--pdf` renders the HTML report to an actual PDF via headless Chrome/Chromium (whichever is on `PATH`) — the format you'd actually hand someone as a deliverable.
@@ -120,7 +121,7 @@ All three keys are optional. `weights` overrides the 50/25/25 default split (the
   with:
     fetch-depth: 0   # required — see the warning below
 
-- uses: aniruddhavasudev/ai-debt-audit@v1.1.0
+- uses: aniruddhavasudev/ai-debt-audit@v1.1.1
   with:
     path: .
     fail-on-score: '70'   # optional — omit to report without blocking the PR
