@@ -1,0 +1,148 @@
+rules:
+  - id: ai-debt-hardcoded-secret
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Hardcoded credential/secret literal. Extremely common in AI-generated
+      code copied from tutorial examples where the model fills in a
+      plausible-looking placeholder key/token.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      exclude:
+        - "*.md"
+        - "*test*"
+        - "*fixture*"
+    pattern-regex: '(?i)(api|secret|token|password|passwd|pwd)[_-]?key\s*[:=]\s*["''][A-Za-z0-9\-_/+=]{12,}["'']'
+
+  - id: ai-debt-sql-string-concat-py
+    languages: [python]
+    severity: ERROR
+    message: >
+      SQL query built via f-string/concatenation instead of a parameterized
+      query. AI models frequently generate CRUD code this way because it
+      "looks correct" in isolation.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: $CUR.execute(f"...{$X}...")
+          - pattern: $CUR.execute("..." + $X + "...")
+
+  - id: ai-debt-sql-string-concat-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >
+      SQL query built via template-literal interpolation instead of a
+      parameterized query/prepared statement. Same AI failure mode as the
+      Python equivalent — happy-path code that "looks correct" in isolation.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: $DB.query(`...${$X}...`)
+
+  - id: ai-debt-eval-exec-dynamic-py
+    languages: [python]
+    severity: ERROR
+    message: >
+      Dynamic code execution (eval/exec). AI-generated glue code often
+      reaches for this to solve a problem that has a safe, explicit
+      solution.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: exec(...)
+
+  - id: ai-debt-eval-exec-dynamic-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >
+      Dynamic code execution (eval/new Function). AI-generated glue code
+      often reaches for this to solve a problem that has a safe, explicit
+      solution.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: new Function(...)
+
+  - id: ai-debt-subprocess-shell-true
+    languages: [python]
+    severity: WARNING
+    message: >
+      subprocess call with shell=True. Common LLM default that opens shell
+      injection risk when any argument includes user input.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+
+  - id: ai-debt-disabled-tls-verification-py
+    languages: [python]
+    severity: ERROR
+    message: >
+      TLS/certificate verification disabled. Seen repeatedly in
+      AI-generated "fix the SSL error" responses that silence the error
+      instead of solving the underlying cert issue.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: requests.$METHOD(..., verify=False, ...)
+
+  - id: ai-debt-disabled-tls-verification-js
+    languages: [generic]
+    severity: ERROR
+    message: >
+      TLS/certificate verification disabled (rejectUnauthorized:false or
+      NODE_TLS_REJECT_UNAUTHORIZED). Seen repeatedly in AI-generated
+      "fix the SSL error" responses that silence the error instead of
+      solving the underlying cert issue.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*.js"
+        - "*.ts"
+        - "*.jsx"
+        - "*.tsx"
+    pattern-regex: '(rejectUnauthorized\s*:\s*false|NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*[''"]?0)'
+
+  - id: ai-debt-insecure-random-for-token-py
+    languages: [python]
+    severity: WARNING
+    message: >
+      Non-cryptographic RNG (random module) used to build a
+      token/id/password. Use `secrets` instead. Common LLM default because
+      `random` is the "obvious" module name.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    patterns:
+      - pattern: $TOKEN = random.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $TOKEN
+          regex: '(?i).*(token|secret|password|passwd|apikey|api_key).*'
+
+  - id: ai-debt-insecure-random-for-token-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      Math.random() used to build a token/id/password. Not
+      cryptographically secure — use crypto.randomBytes /
+      crypto.getRandomValues instead.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    patterns:
+      - pattern: const $TOKEN = Math.random()
+      - metavariable-regex:
+          metavariable: $TOKEN
+          regex: '(?i).*(token|secret|password|passwd|apikey|api_key).*'

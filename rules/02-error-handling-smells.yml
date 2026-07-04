@@ -1,0 +1,136 @@
+rules:
+  - id: ai-debt-empty-catch-block-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      Empty catch block. AI-generated code frequently wraps calls in
+      try/catch to "make the error go away" without handling or surfacing
+      the failure — a hallmark of unreviewed AI output.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 4
+    pattern: |
+      try {
+        ...
+      } catch ($E) { }
+
+  - id: ai-debt-empty-except-block-py
+    languages: [python]
+    severity: WARNING
+    message: >
+      Empty except block (pass-only). Same AI failure mode as the
+      JS/TS equivalent — the error is swallowed with no handling or
+      logging.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: |
+              try:
+                  ...
+              except $E:
+                  pass
+          - pattern: |
+              try:
+                  ...
+              except $E as $NAME:
+                  pass
+
+  - id: ai-debt-catch-log-only-swallow-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      Exception caught and only console.log'd, with no re-raise, fallback,
+      or user-facing signal. Looks like proper error handling but silently
+      hides failures in production.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 3
+    pattern: |
+      try {
+        ...
+      } catch ($E) {
+        console.log(...)
+      }
+
+  - id: ai-debt-catch-log-only-swallow-py
+    languages: [python]
+    severity: WARNING
+    message: >
+      Exception caught and only printed/logged, with no re-raise, fallback,
+      or user-facing signal. Looks like proper error handling but silently
+      hides failures in production.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 3
+    patterns:
+      - pattern-either:
+          - pattern: |
+              try:
+                  ...
+              except $E:
+                  print(...)
+          - pattern: |
+              try:
+                  ...
+              except $E as $NAME:
+                  print(...)
+          - pattern: |
+              try:
+                  ...
+              except $E:
+                  logging.$LOGFN(...)
+          - pattern: |
+              try:
+                  ...
+              except $E as $NAME:
+                  logging.$LOGFN(...)
+
+  - id: ai-debt-generic-exception-catch-all-py
+    languages: [python]
+    severity: WARNING
+    message: >
+      Catch-all for the broadest exception type (Exception) rather than
+      the specific error being handled. AI models default to this when
+      unsure what exceptions a call can raise, masking real bugs.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 2
+    pattern: |
+      try:
+          ...
+      except Exception as $E:
+          ...
+
+  - id: ai-debt-generic-exception-catch-all-java
+    languages: [java]
+    severity: WARNING
+    message: >
+      Catch-all for Throwable/Exception rather than the specific error
+      being handled. AI models default to this when unsure what exceptions
+      a call can raise, masking real bugs.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 2
+    pattern: catch (Exception $E) { ... }
+
+  - id: ai-debt-unhandled-promise-then-no-catch
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      Promise chain with .then() but no trailing .catch(). Common when AI
+      generates async code by pattern-matching a happy-path example
+      without considering rejection handling.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 3
+    patterns:
+      - pattern: $PROMISE.then($CB)
+      - pattern-not: $PROMISE.then($CB).catch(...)
+      - pattern-not-inside: |
+          try {
+            ...
+          } catch ($E) {
+            ...
+          }
