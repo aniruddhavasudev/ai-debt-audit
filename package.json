@@ -4,9 +4,13 @@
   "description": "Scans a repo for AI-generated technical, cognitive, and intent debt.",
   "type": "module",
   "private": true,
+  "bin": {
+    "aidebt-scan": "./bin/aidebt-scan.js"
+  },
   "scripts": {
     "gitmine": "node scripts/git-mine.js",
-    "score": "node scripts/score.js"
+    "score": "node scripts/score.js",
+    "scan": "node bin/aidebt-scan.js"
   },
   "dependencies": {
     "jscpd": "^5.0.11"
