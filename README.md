@@ -116,7 +116,7 @@ All three keys are optional. `weights` overrides the 50/25/25 default split (the
 ## Using it as a GitHub Action
 
 ```yaml
-- uses: aniruddhavasudev/ai-debt-audit@main
+- uses: aniruddhavasudev/ai-debt-audit@v1.1.0
   with:
     path: .
     fail-on-score: '70'   # optional — omit to report without blocking the PR
