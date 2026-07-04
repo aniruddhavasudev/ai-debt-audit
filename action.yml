@@ -1,3 +1,16 @@
+# IMPORTANT: the calling workflow's checkout step MUST use fetch-depth: 0
+# (full history), not the actions/checkout default of fetch-depth: 1 (a
+# single commit). Confirmed empirically: a shallow clone of a mature,
+# widely-contributed project scored cognitive debt at 86/100; the same
+# repo with full history scored 37/100. A shallow clone doesn't error out
+# — it just silently produces a wrong number, since bus-factor and
+# commit-message analysis both need real history to mean anything. The
+# scan itself detects this and prints a warning if it happens anyway, but
+# fixing the checkout step avoids the problem entirely:
+#
+#   - uses: actions/checkout@v4
+#     with:
+#       fetch-depth: 0
 name: 'AI-Debt Audit'
 description: 'Scan a repo for AI-generated technical, cognitive, and intent debt. Deterministic, fully local — no LLM calls, nothing leaves the runner.'
 author: 'aniruddhavasudev'

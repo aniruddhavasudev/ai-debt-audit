@@ -95,15 +95,34 @@ function mineBusFactor(repoPath) {
   };
 }
 
+// A shallow clone (git's own default for CI checkouts — GitHub Actions'
+// actions/checkout defaults to fetch-depth: 1, a single commit) severely
+// distorts every signal in this file: bus-factor undercounts historical
+// authors per file, and commit-message/refactor-ratio stats only see
+// whatever tiny window was fetched. Confirmed empirically during
+// development — a shallow 50-commit clone of a mature, widely-contributed
+// project scored cognitive debt at 86/100; the same repo with full history
+// scored 37/100. Surface this so a caller can warn instead of silently
+// trusting a distorted number.
+function isShallowRepo(repoPath) {
+  try {
+    return git(repoPath, ["rev-parse", "--is-shallow-repository"]).trim() === "true";
+  } catch {
+    return false;
+  }
+}
+
 function main() {
   const repoPath = path.resolve(process.argv[2] || ".");
   const commitStats = mineCommitMessages(repoPath);
   const busFactorStats = mineBusFactor(repoPath);
+  const isShallowClone = isShallowRepo(repoPath);
 
   const result = {
     repoPath,
     commitStats,
     busFactorStats,
+    isShallowClone,
   };
 
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");

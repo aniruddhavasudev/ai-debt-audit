@@ -382,6 +382,16 @@ function printSummaryBox(scores, outPath, htmlPath, pdfPath, history) {
   console.log("\n" + rule);
   console.log(c.bold("  AI-DEBT REPORT"));
   console.log(rule);
+  if (cognitive.isShallowClone) {
+    console.log(
+      c.yellow(
+        "  ⚠ Shallow git clone detected — cognitive/intent debt scores below are\n" +
+          "    likely unreliable. Run `git fetch --unshallow` (or use fetch-depth: 0\n" +
+          "    in CI) and re-scan before trusting them."
+      )
+    );
+    console.log(rule);
+  }
   let trend = "";
   if (history && history.length >= 2) {
     const previous = history[history.length - 2];

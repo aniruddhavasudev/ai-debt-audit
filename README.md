@@ -116,6 +116,10 @@ All three keys are optional. `weights` overrides the 50/25/25 default split (the
 ## Using it as a GitHub Action
 
 ```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0   # required — see the warning below
+
 - uses: aniruddhavasudev/ai-debt-audit@v1.1.0
   with:
     path: .
@@ -123,6 +127,8 @@ All three keys are optional. `weights` overrides the 50/25/25 default split (the
 ```
 
 This runs the full scan on every PR, uploads findings to GitHub's Security tab as SARIF, and attaches the Markdown/HTML reports as workflow artifacts. See [`action.yml`](action.yml) for all inputs.
+
+**`fetch-depth: 0` is not optional.** `actions/checkout`'s default (`fetch-depth: 1`, a single commit) silently wrecks the cognitive/intent debt scores — confirmed empirically: a shallow 50-commit clone of a mature, widely-contributed project scored cognitive debt at 86/100; the same repo with full history scored 37/100. It doesn't error, it just quietly produces a wrong number, because bus-factor and commit-message analysis both need real history to mean anything. The scanner detects a shallow clone and prints a warning both in the terminal and in the report if this happens anyway — but fixing the checkout step avoids the problem entirely.
 
 ## Using it as a Claude Code skill
 
