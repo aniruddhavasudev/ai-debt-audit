@@ -1,5 +1,9 @@
 # ai-debt-audit
 
+[![CI](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+![PRs welcome](https://img.shields.io/badge/PRs-welcome-blueviolet)
+
 **Measure comprehension debt in AI-generated code.**
 
 A repo scanner for the specific mess that AI coding assistants leave behind: disabled RLS policies, auth checks that only exist in the happy path, `debug=True` still on, secrets copy-pasted from a tutorial, and the quieter stuff — one person owning half the codebase, commits that just say "fix," nobody writing down why anything is the way it is.
@@ -86,9 +90,35 @@ That's a real run, not a mockup. You get a Markdown report with every finding an
 
 ```bash
 aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json scores.json]
+                           [--sarif results.sarif] [--fail-on-score N]
 ```
 
-`--out` picks where the Markdown goes (`./ai-debt-report.md` if you don't say). `--html` does the same for the HTML version — pass `--html ""` if you don't want one. `--json` dumps the raw numbers, useful if you want to track a score over time instead of just reading one report.
+`--out` picks where the Markdown goes (`./ai-debt-report.md` if you don't say). `--html` does the same for the HTML version — pass `--html ""` if you don't want one. `--json` dumps the raw numbers, useful if you want to track a score over time instead of just reading one report. `--sarif` writes GitHub's native code-scanning format (see the GitHub Action below). `--fail-on-score N` exits non-zero if the composite score is `>= N` — the hook a CI pipeline needs to actually block something, not just print a number.
+
+## Customizing the score with `.aidebtrc.json`
+
+Drop this at the root of the repo being scanned to override the defaults:
+
+```json
+{
+  "weights": { "technical": 0.6, "cognitive": 0.2, "intent": 0.2 },
+  "ignoreRules": ["ai-debt-console-log-debug-leftover"],
+  "excludePaths": ["vendor/**", "*/migrations/*"]
+}
+```
+
+All three keys are optional. `weights` overrides the 50/25/25 default split (they don't need to sum to 1 — the composite is just a weighted average). `ignoreRules` drops specific rule IDs from scoring entirely, not just from the report. `excludePaths` does the same for whole paths, using simple glob patterns (`*` and `**`).
+
+## Using it as a GitHub Action
+
+```yaml
+- uses: aniruddhavasudev/ai-debt-audit@main
+  with:
+    path: .
+    fail-on-score: '70'   # optional — omit to report without blocking the PR
+```
+
+This runs the full scan on every PR, uploads findings to GitHub's Security tab as SARIF, and attaches the Markdown/HTML reports as workflow artifacts. See [`action.yml`](action.yml) for all inputs.
 
 ## About that `test-fixtures/` folder
 

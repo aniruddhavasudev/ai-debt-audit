@@ -250,7 +250,10 @@ function runGitleaks(targetPath, outPath) {
 }
 
 function printSummaryBox(scores, outPath, htmlPath) {
-  const { composite, tier, technical, cognitive, intent } = scores;
+  const { composite, tier, technical, cognitive, intent, weights } = scores;
+  // Fall back to the historical 50/25/25 default only if an older score.js
+  // (pre-config-support) produced this JSON without a weights field.
+  const w = weights || { technical: 0.5, cognitive: 0.25, intent: 0.25 };
   const width = 56;
   const rule = c.dim("─".repeat(width));
 
@@ -261,9 +264,9 @@ function printSummaryBox(scores, outPath, htmlPath) {
     `  Composite Score: ${c.bold(composite + "/100")}   ${tierColor(tier, `[${tier} Risk]`)}`
   );
   console.log(rule);
-  console.log(`  Technical debt   ${barChart(technical.blendedScore, 24)}  ${String(technical.blendedScore).padStart(3)}/100  (50%)`);
-  console.log(`  Cognitive debt   ${barChart(cognitive.score, 24)}  ${String(cognitive.score).padStart(3)}/100  (25%)`);
-  console.log(`  Intent debt      ${barChart(intent.score, 24)}  ${String(intent.score).padStart(3)}/100  (25%)`);
+  console.log(`  Technical debt   ${barChart(technical.blendedScore, 24)}  ${String(technical.blendedScore).padStart(3)}/100  (${Math.round(w.technical * 100)}%)`);
+  console.log(`  Cognitive debt   ${barChart(cognitive.score, 24)}  ${String(cognitive.score).padStart(3)}/100  (${Math.round(w.cognitive * 100)}%)`);
+  console.log(`  Intent debt      ${barChart(intent.score, 24)}  ${String(intent.score).padStart(3)}/100  (${Math.round(w.intent * 100)}%)`);
   console.log(rule);
   console.log(`  ${c.dim("Markdown:")} ${outPath}`);
   if (htmlPath) console.log(`  ${c.dim("HTML:    ")} ${htmlPath}`);
