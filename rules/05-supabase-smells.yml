@@ -1,0 +1,109 @@
+rules:
+  - id: ai-debt-supabase-rls-disabled
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Row-Level Security explicitly disabled on a Supabase table. This is
+      the single most common AI-generated-app vulnerability observed in the
+      wild — RLS gets turned off to unblock a demo and is never re-enabled,
+      leaving every row readable/writable by any authenticated (or even
+      anonymous) client.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*.sql"
+    pattern-regex: '(?i)alter table\s+\S+\s+disable row level security'
+
+  - id: ai-debt-supabase-permissive-rls-policy
+    languages: [generic]
+    severity: WARNING
+    message: >
+      RLS policy with a `using (true)` or equivalent always-true condition
+      — functionally equivalent to no RLS at all. Common AI shortcut when
+      a real per-user policy proved harder to get working than a stub
+      that "passes."
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    paths:
+      include:
+        - "*.sql"
+    pattern-regex: '(?i)create policy .* using\s*\(\s*true\s*\)'
+
+  - id: ai-debt-supabase-service-role-key-client-side
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Supabase service_role key referenced outside an API route/server-only
+      file. The service role key bypasses RLS entirely — if it ships to the
+      browser bundle, it's a full database compromise. AI assistants
+      frequently copy the service-role example from Supabase docs into a
+      client component without realizing the difference from the anon key.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*.tsx"
+        - "*.jsx"
+      exclude:
+        - "*/api/*"
+        - "*/server/*"
+        - "*route.ts"
+    pattern-regex: '(SUPABASE_SERVICE_ROLE_KEY|service_role)'
+
+  - id: ai-debt-nextjs-api-route-missing-auth-check
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      Next.js API route / route handler with a Supabase DB call but no
+      visible session/auth check in the same function. AI-generated CRUD
+      endpoints often implement the happy-path query and skip the
+      "is this user allowed to do this" check entirely.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern: |
+          export async function $METHOD($REQ) {
+            ...
+            $SUPABASE.from(...).$OP(...)
+            ...
+          }
+      - pattern-not: |
+          export async function $METHOD($REQ) {
+            ...
+            $SESSION = $SUPABASE.auth.$AUTHCALL(...)
+            ...
+          }
+
+  - id: ai-debt-supabase-unvalidated-webhook
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >
+      Webhook handler (e.g. Stripe/Supabase Edge Function) that parses the
+      request body without verifying a signature header first. Very common
+      in AI-generated payment/webhook glue code — the happy-path handler
+      works in testing and the signature check is silently skipped.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*webhook*"
+        - "*hooks*"
+    patterns:
+      - pattern: |
+          export async function POST($REQ) {
+            ...
+            $BODY = await $REQ.json()
+            ...
+          }
+      - pattern-not: |
+          export async function POST($REQ) {
+            ...
+            $SIG = $REQ.headers.get(...)
+            ...
+          }
