@@ -124,6 +124,10 @@ All three keys are optional. `weights` overrides the 50/25/25 default split (the
 
 This runs the full scan on every PR, uploads findings to GitHub's Security tab as SARIF, and attaches the Markdown/HTML reports as workflow artifacts. See [`action.yml`](action.yml) for all inputs.
 
+## Using it as a Claude Code skill
+
+This repo is also packaged as a Claude Code plugin ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json), [`skills/ai-debt-audit/SKILL.md`](skills/ai-debt-audit/SKILL.md)) — install it and Claude will know to run a real scan (not just describe one) when you ask it to audit a repo for AI-generated debt.
+
 ## About that `test-fixtures/` folder
 
 It's full of fake credentials — a placeholder API key, AWS's own example access key, a Django `django-insecure-` dev key, a Flask secret that's just the word "secret" with numbers on it. That's on purpose, it's how I verified every rule actually fires instead of just parsing cleanly. If GitHub's secret scanner ever flags one of these, that's why — none of them are real.
