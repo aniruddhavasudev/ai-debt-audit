@@ -11,6 +11,7 @@
  * Usage:
  *   aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json raw.json]
  *                              [--sarif results.sarif] [--fail-on-score N] [--pdf report.pdf]
+ *                              [--history history.json]
  *
  * By default, both a Markdown report (--out, default ./ai-debt-report.md)
  * and an HTML report (same name, .html extension) are written. Pass
@@ -23,6 +24,10 @@
  * --pdf renders the HTML report to PDF via headless Chrome/Chromium — the
  * actual client-deliverable format, not just an internal artifact. Requires
  * an HTML report to exist (not compatible with --html "").
+ * --history appends this run's score to a local JSON file and shows the
+ * trend (improving/worsening) vs the previous run — "is this getting
+ * better or worse" is a different question than "what's the score now,"
+ * and one-shot manual audits can't answer it at all.
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -79,6 +84,47 @@ function fileExists(p) {
   } catch {
     return false;
   }
+}
+
+function getGitCommitSha(targetPath) {
+  try {
+    return execFileSync("git", ["-C", targetPath, "rev-parse", "--short", "HEAD"], {
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+// Appends this run's score to a small local JSON history file so a repo can
+// be tracked over time — "is this getting better or worse" is a genuinely
+// different question than "what's the score right now," and one-shot
+// competitors (the manual audit agencies) can't answer it at all since they
+// don't run continuously against the same repo.
+function recordHistory(historyPath, targetPath, scores) {
+  let history = [];
+  if (fileExists(historyPath)) {
+    try {
+      history = JSON.parse(fs.readFileSync(historyPath, "utf8"));
+      if (!Array.isArray(history)) history = [];
+    } catch {
+      console.error(c.yellow(`  Warning: ${historyPath} exists but isn't valid JSON — starting a new history.`));
+      history = [];
+    }
+  }
+
+  history.push({
+    timestamp: new Date().toISOString(),
+    commit: getGitCommitSha(targetPath),
+    composite: scores.composite,
+    tier: scores.tier,
+    technical: scores.technical.blendedScore,
+    cognitive: scores.cognitive.score,
+    intent: scores.intent.score,
+  });
+
+  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+  return history;
 }
 
 function detectCentralizedAuthMiddleware(targetPath) {
@@ -287,7 +333,7 @@ function runPdfExport(htmlPath, pdfPath) {
   return fileExists(pdfPath) ? pdfPath : null;
 }
 
-function printSummaryBox(scores, outPath, htmlPath, pdfPath) {
+function printSummaryBox(scores, outPath, htmlPath, pdfPath, history) {
   const { composite, tier, technical, cognitive, intent, weights } = scores;
   // Fall back to the historical 50/25/25 default only if an older score.js
   // (pre-config-support) produced this JSON without a weights field.
@@ -298,8 +344,21 @@ function printSummaryBox(scores, outPath, htmlPath, pdfPath) {
   console.log("\n" + rule);
   console.log(c.bold("  AI-DEBT REPORT"));
   console.log(rule);
+  let trend = "";
+  if (history && history.length >= 2) {
+    const previous = history[history.length - 2];
+    const delta = composite - previous.composite;
+    if (delta === 0) {
+      trend = c.dim("  (no change since last scan)");
+    } else if (delta < 0) {
+      trend = c.green(`  (${delta} since last scan — improving)`);
+    } else {
+      trend = c.red(`  (+${delta} since last scan — worsening)`);
+    }
+  }
+
   console.log(
-    `  Composite Score: ${c.bold(composite + "/100")}   ${tierColor(tier, `[${tier} Risk]`)}`
+    `  Composite Score: ${c.bold(composite + "/100")}   ${tierColor(tier, `[${tier} Risk]`)}${trend}`
   );
   console.log(rule);
   console.log(`  Technical debt   ${barChart(technical.blendedScore, 24)}  ${String(technical.blendedScore).padStart(3)}/100  (${Math.round(w.technical * 100)}%)`);
@@ -377,7 +436,13 @@ function main() {
 
   fs.rmSync(workDir, { recursive: true, force: true });
 
-  printSummaryBox(scores, outPath, htmlPath, pdfPath);
+  let history = null;
+  if (args.history) {
+    const historyPath = path.resolve(args.history);
+    history = recordHistory(historyPath, targetPath, scores);
+  }
+
+  printSummaryBox(scores, outPath, htmlPath, pdfPath, history);
 
   // Propagate score.js's exit code — this is how --fail-on-score reaches
   // a CI system: a real non-zero exit, not just text in a log.

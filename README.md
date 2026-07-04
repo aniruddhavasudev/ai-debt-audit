@@ -95,6 +95,8 @@ aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json scores
 
 `--out` picks where the Markdown goes (`./ai-debt-report.md` if you don't say). `--html` does the same for the HTML version — pass `--html ""` if you don't want one. `--json` dumps the raw numbers, useful if you want to track a score over time instead of just reading one report. `--sarif` writes GitHub's native code-scanning format (see the GitHub Action below). `--fail-on-score N` exits non-zero if the composite score is `>= N` — the hook a CI pipeline needs to actually block something, not just print a number. `--pdf` renders the HTML report to an actual PDF via headless Chrome/Chromium (whichever is on `PATH`) — the format you'd actually hand someone as a deliverable.
 
+`--history history.json` appends this run's score to a small local JSON file and shows the trend against the previous run right in the terminal summary — improving or worsening, not just a snapshot. Point it at the same file every time you scan a given repo and it becomes a running log.
+
 ## Customizing the score with `.aidebtrc.json`
 
 Drop this at the root of the repo being scanned to override the defaults:
