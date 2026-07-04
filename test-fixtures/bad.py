@@ -28,3 +28,4 @@ def flaky2():
 
 def stub():
     raise NotImplementedError
+aws_access_key_id = "AKIAIOSFODNN7EXAMPLE"
