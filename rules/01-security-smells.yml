@@ -10,10 +10,13 @@ rules:
       ai_debt_category: security
       weight: 5
     paths:
+      # Deliberately NOT excluding test/fixture paths: real secrets leak into
+      # seed scripts and test files constantly, often via exactly the kind
+      # of AI-assisted carelessness this tool exists to catch. Only .md is
+      # excluded, since docs legitimately show "API_KEY=xxx" as a
+      # placeholder example, not a real committed secret.
       exclude:
         - "*.md"
-        - "*test*"
-        - "*fixture*"
     pattern-regex: '(?i)(api|secret|token|password|passwd|pwd)[_-]?key\s*[:=]\s*["''][A-Za-z0-9\-_/+=]{12,}["'']'
 
   - id: ai-debt-sql-string-concat-py

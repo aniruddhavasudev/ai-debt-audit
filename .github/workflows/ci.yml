@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python scanning tools
+        run: pip install --quiet semgrep bandit pip-audit
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          VERSION=$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4 | sed 's/^v//')
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | sudo tar -xz -C /usr/local/bin gitleaks
+          sudo chmod +x /usr/local/bin/gitleaks
+
+      - name: Validate Semgrep rule syntax
+        run: semgrep --validate --config rules/
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Run rule regression tests against test-fixtures/
+        run: node scripts/test-rules.js
+
+      - name: Smoke-test the full CLI end to end
+        run: |
+          node bin/aidebt-scan.js test-fixtures/flask --out /tmp/ci-report.md --html /tmp/ci-report.html
+          test -s /tmp/ci-report.md
+          test -s /tmp/ci-report.html
+          echo "CLI produced non-empty reports successfully."

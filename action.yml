@@ -1,0 +1,100 @@
+name: 'AI-Debt Audit'
+description: 'Scan a repo for AI-generated technical, cognitive, and intent debt. Deterministic, fully local — no LLM calls, nothing leaves the runner.'
+author: 'aniruddhavasudev'
+branding:
+  icon: 'search'
+  color: 'orange'
+
+inputs:
+  path:
+    description: 'Path to scan, relative to the repo root checked out by the calling workflow'
+    required: false
+    default: '.'
+  fail-on-score:
+    description: 'Fail the check if the composite AI-Debt score (0-100) is >= this value. Leave empty to never fail the check on score alone.'
+    required: false
+    default: ''
+  upload-sarif:
+    description: 'Upload findings to GitHub code scanning (Security tab) via SARIF'
+    required: false
+    default: 'true'
+
+outputs:
+  score:
+    description: 'The composite AI-Debt score (0-100)'
+    value: ${{ steps.read-score.outputs.score }}
+  tier:
+    description: 'Risk tier: Low, Medium, High, or Critical'
+    value: ${{ steps.read-score.outputs.tier }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Python scanning tools
+      shell: bash
+      run: pip install --quiet semgrep bandit pip-audit
+
+    - name: Install gitleaks
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION=$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4 | sed 's/^v//')
+        curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+          | tar -xz -C /usr/local/bin gitleaks
+        chmod +x /usr/local/bin/gitleaks
+
+    - name: Install ai-debt-audit's own dependencies (jscpd)
+      shell: bash
+      run: npm install --prefix "${{ github.action_path }}" --no-audit --no-fund --silent
+
+    - name: Run scan
+      id: scan
+      shell: bash
+      continue-on-error: true
+      run: |
+        set +e
+        ARGS=("${{ inputs.path }}" --out ai-debt-report.md --html ai-debt-report.html --sarif ai-debt-results.sarif --json ai-debt-scores.json)
+        if [ -n "${{ inputs.fail-on-score }}" ]; then
+          ARGS+=(--fail-on-score "${{ inputs.fail-on-score }}")
+        fi
+        node "${{ github.action_path }}/bin/aidebt-scan.js" "${ARGS[@]}"
+        echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Read score for job outputs
+      id: read-score
+      shell: bash
+      run: |
+        echo "score=$(node -p "require('./ai-debt-scores.json').composite")" >> "$GITHUB_OUTPUT"
+        echo "tier=$(node -p "require('./ai-debt-scores.json').tier")" >> "$GITHUB_OUTPUT"
+
+    - name: Upload SARIF to code scanning
+      if: inputs.upload-sarif == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ai-debt-results.sarif
+
+    - name: Upload report artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-debt-report
+        path: |
+          ai-debt-report.md
+          ai-debt-report.html
+
+    - name: Fail the check if the scan exited non-zero
+      shell: bash
+      run: |
+        if [ "${{ steps.scan.outputs.exit_code }}" != "0" ]; then
+          echo "AI-Debt score ${{ steps.read-score.outputs.score }} triggered --fail-on-score ${{ inputs.fail-on-score }}"
+          exit 1
+        fi

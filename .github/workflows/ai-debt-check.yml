@@ -1,0 +1,22 @@
+name: AI-Debt Check
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run AI-Debt Audit on this repo
+        uses: ./
+        with:
+          path: .
+          # Informational only for now — this repo's own score isn't
+          # calibrated as a gate yet, so it reports but doesn't fail the PR.
+          fail-on-score: ''
