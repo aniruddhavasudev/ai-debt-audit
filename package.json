@@ -1,7 +1,20 @@
 {
   "name": "ai-debt-audit",
   "version": "0.1.0",
-  "description": "Scans a repo for AI-generated technical, cognitive, and intent debt.",
+  "description": "Scans a repo for AI-generated technical, cognitive, and intent debt. Deterministic, explainable, fully local — no code ever leaves your machine.",
+  "keywords": [
+    "ai",
+    "technical-debt",
+    "code-audit",
+    "semgrep",
+    "vibe-coding",
+    "django",
+    "flask",
+    "nextjs",
+    "supabase",
+    "static-analysis"
+  ],
+  "author": "",
   "type": "module",
   "private": true,
   "bin": {
