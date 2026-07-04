@@ -118,21 +118,83 @@ function step(label, fn) {
   return result;
 }
 
+// Semgrep's own free, community-maintained registry packs — broader
+// framework-specific coverage (XSS via mark_safe, mass assignment, open
+// redirects) than we'd hand-write ourselves. Layered alongside our own
+// custom AI-debt rules, not instead of them: the registry doesn't know
+// about AI-specific smells (placeholder stubs, framework misuse patterns),
+// only our rules do.
+const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask"];
+
 function runSemgrep(targetPath, outPath) {
+  const configArgs = [RULES_DIR, ...SEMGREP_REGISTRY_PACKS].flatMap((cfg) => ["--config", cfg]);
   try {
-    execFileSync(
-      "semgrep",
-      ["--config", RULES_DIR, targetPath, "--json", "--output", outPath, "--quiet"],
-      { stdio: ["ignore", "ignore", "ignore"] }
-    );
+    execFileSync("semgrep", [...configArgs, targetPath, "--json", "--output", outPath, "--quiet"], {
+      stdio: ["ignore", "ignore", "ignore"],
+    });
     return outPath;
   } catch {
     // Semgrep exits non-zero when findings exist AND when it errors — the
     // only reliable signal is whether it actually wrote a valid JSON file.
     if (fileExists(outPath)) return outPath;
-    console.error(c.red("  Semgrep failed to run — is it installed? (pip install semgrep)"));
+    // Registry packs need network access — if that's what failed, fall
+    // back to our own rules only rather than losing the whole scan.
+    try {
+      execFileSync("semgrep", ["--config", RULES_DIR, targetPath, "--json", "--output", outPath, "--quiet"], {
+        stdio: ["ignore", "ignore", "ignore"],
+      });
+      console.error(c.yellow("  Semgrep registry packs (p/django, p/flask) unavailable — used local rules only"));
+      return outPath;
+    } catch {
+      if (fileExists(outPath)) return outPath;
+      console.error(c.red("  Semgrep failed to run — is it installed? (pip install semgrep)"));
+      return null;
+    }
+  }
+}
+
+function runBandit(targetPath, outPath) {
+  if (!binExists("bandit")) {
+    console.error(c.yellow("  bandit not found on PATH — skipping Python security scan (pip install bandit)"));
     return null;
   }
+  try {
+    execFileSync("bandit", ["-r", targetPath, "-f", "json", "-o", outPath], { stdio: ["ignore", "ignore", "ignore"] });
+  } catch {
+    // Bandit exits non-zero when it finds issues — that's success for us,
+    // not an error. Only a missing output file is a real failure.
+  }
+  return fileExists(outPath) ? outPath : null;
+}
+
+const REQUIREMENTS_CANDIDATES = ["requirements.txt", "requirements/base.txt", "requirements/production.txt"];
+
+function findRequirementsFile(targetPath) {
+  for (const candidate of REQUIREMENTS_CANDIDATES) {
+    const candidatePath = path.join(targetPath, candidate);
+    if (fileExists(candidatePath)) return candidatePath;
+  }
+  return null;
+}
+
+function runPipAudit(targetPath, outPath) {
+  if (!binExists("pip-audit")) {
+    console.error(c.yellow("  pip-audit not found on PATH — skipping dependency vulnerability scan (pip install pip-audit)"));
+    return null;
+  }
+  const reqFile = findRequirementsFile(targetPath);
+  if (!reqFile) {
+    console.error(c.yellow("  no requirements.txt found — skipping dependency vulnerability scan"));
+    return null;
+  }
+  try {
+    execFileSync("pip-audit", ["-r", reqFile, "--format", "json", "-o", outPath], {
+      stdio: ["ignore", "ignore", "ignore"],
+    });
+  } catch {
+    // pip-audit exits non-zero when vulnerabilities are found — success for us.
+  }
+  return fileExists(outPath) ? outPath : null;
 }
 
 function runGitMine(targetPath, outPath) {
@@ -220,6 +282,8 @@ function main() {
   const gitmineOut = step("git-mine (cognitive + intent debt)", () => runGitMine(targetPath, path.join(workDir, "gitmine.json")));
   const jscpdOut = step("jscpd (duplication)", () => runJscpd(targetPath, path.join(workDir, "jscpd")));
   const gitleaksOut = step("gitleaks (historical secrets)", () => runGitleaks(targetPath, path.join(workDir, "gitleaks.json")));
+  const banditOut = step("bandit (Python security)", () => runBandit(targetPath, path.join(workDir, "bandit.json")));
+  const pipAuditOut = step("pip-audit (dependency vulnerabilities)", () => runPipAudit(targetPath, path.join(workDir, "pip-audit.json")));
 
   if (!semgrepOut || !gitmineOut) {
     console.error(
@@ -231,6 +295,8 @@ function main() {
   const scoreArgs = [SCORE_SCRIPT, "--semgrep", semgrepOut, "--gitmine", gitmineOut];
   if (jscpdOut) scoreArgs.push("--jscpd", jscpdOut);
   if (gitleaksOut) scoreArgs.push("--gitleaks", gitleaksOut);
+  if (banditOut) scoreArgs.push("--bandit", banditOut);
+  if (pipAuditOut) scoreArgs.push("--pipaudit", pipAuditOut);
 
   const outPath = args.out ? path.resolve(args.out) : path.resolve("ai-debt-report.md");
   const htmlPath = args.html === undefined ? outPath.replace(/\.md$/, "") + ".html" : args.html ? path.resolve(args.html) : null;

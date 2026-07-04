@@ -26,15 +26,22 @@ const WEIGHTS = {
   intent: 0.25,
 };
 
-// How the technical-debt category splits across its three input tools.
+// How the technical-debt category splits across its five input tools.
 // Gitleaks gets real weight despite being the simplest input because it
 // scans full git *history*, not just the current snapshot — a secret
 // that was committed and later deleted is still a live breach risk that
 // Semgrep (snapshot-only) and jscpd (duplication-only) cannot see at all.
+// Semgrep's own share dropped from 0.6 to make room for Bandit and
+// pip-audit, not because Semgrep matters less — it still carries every
+// AI-debt-specific custom rule (placeholder stubs, framework misuse) that
+// no off-the-shelf tool knows about; Bandit and pip-audit only ever
+// contribute when they actually ran (see combineTechnicalDebt).
 const TECHNICAL_SUBWEIGHTS = {
-  semgrep: 0.6,
-  duplication: 0.2,
+  semgrep: 0.35,
+  bandit: 0.15,
+  duplication: 0.15,
   historicalSecrets: 0.2,
+  dependencyVulns: 0.15,
 };
 
 // "If the average weighted Semgrep finding-score per file reaches this
@@ -53,6 +60,19 @@ const DUPLICATION_SATURATION_PERCENT = 20;
 // binary risk — a handful of them shouldn't need to compound much
 // further to hit Critical.
 const POINTS_PER_LEAKED_SECRET = 25;
+
+// Bandit severity weights (LOW/MEDIUM/HIGH), summed then normalized per
+// file scanned the same way Semgrep findings are — same rationale, a
+// starting point pending calibration, not derived from real data yet.
+const BANDIT_SEVERITY_WEIGHT = { LOW: 1, MEDIUM: 3, HIGH: 5 };
+const BANDIT_SATURATION_PER_FILE = 1.5;
+
+// "Each distinct vulnerable *package* (not each individual CVE within it)
+// adds this many points, capped at 100." Counting packages rather than
+// raw CVE count avoids one heavily-CVE'd package (e.g. an ancient Flask)
+// dominating the score disproportionately to how many risky dependencies
+// actually exist.
+const POINTS_PER_VULNERABLE_PACKAGE = 20;
 
 function parseArgs(argv) {
   const args = {};
@@ -121,13 +141,71 @@ function scoreHistoricalSecrets(gitleaksResults) {
   };
 }
 
-function combineTechnicalDebt(semgrepScore, duplication, historicalSecrets) {
+function scoreBandit(banditResults, totalFilesScanned) {
+  if (!banditResults) return null;
+  const findings = banditResults.results || [];
+  const byCategory = {};
+  let totalWeight = 0;
+
+  for (const finding of findings) {
+    const severity = finding.issue_severity || "LOW";
+    const weight = BANDIT_SEVERITY_WEIGHT[severity] ?? 1;
+    byCategory[severity] = (byCategory[severity] || 0) + 1;
+    totalWeight += weight;
+  }
+
+  const filesForNormalization = Math.max(totalFilesScanned, 1);
+  const weightedFindingsPerFile = totalWeight / filesForNormalization;
+  const score = Math.round(Math.min(100, 100 * (weightedFindingsPerFile / BANDIT_SATURATION_PER_FILE)));
+
+  return {
+    score,
+    totalFindings: findings.length,
+    byCategory,
+    top: [...findings]
+      .sort((a, b) => (BANDIT_SEVERITY_WEIGHT[b.issue_severity] ?? 0) - (BANDIT_SEVERITY_WEIGHT[a.issue_severity] ?? 0))
+      .slice(0, 5)
+      .map((f) => ({
+        testId: f.test_id,
+        severity: f.issue_severity,
+        file: f.filename,
+        line: f.line_number,
+        text: f.issue_text,
+      })),
+  };
+}
+
+function scoreDependencyVulnerabilities(pipAuditResults) {
+  if (!pipAuditResults) return null;
+  const dependencies = pipAuditResults.dependencies || [];
+  const vulnerablePackages = dependencies.filter((d) => (d.vulns || []).length > 0);
+  const totalVulnCount = vulnerablePackages.reduce((sum, d) => sum + d.vulns.length, 0);
+  const score = Math.round(Math.min(100, vulnerablePackages.length * POINTS_PER_VULNERABLE_PACKAGE));
+
+  return {
+    score,
+    vulnerablePackageCount: vulnerablePackages.length,
+    totalVulnCount,
+    packages: vulnerablePackages.map((d) => ({
+      name: d.name,
+      version: d.version,
+      vulnIds: d.vulns.map((v) => v.id),
+      fixVersions: [...new Set(d.vulns.flatMap((v) => v.fix_versions || []))],
+    })),
+  };
+}
+
+function combineTechnicalDebt(semgrepScore, duplication, historicalSecrets, bandit, dependencyVulns) {
   // If a tool wasn't run, redistribute its weight across the tools that
   // were — a report missing gitleaks shouldn't silently understate risk
-  // by averaging in a phantom zero.
+  // by averaging in a phantom zero. This also means a non-Python repo
+  // (no bandit/pip-audit findings possible) is scored fairly on the tools
+  // that actually apply to it, rather than penalized for a stack mismatch.
   const parts = [{ score: semgrepScore, weight: TECHNICAL_SUBWEIGHTS.semgrep }];
   if (duplication) parts.push({ score: duplication.score, weight: TECHNICAL_SUBWEIGHTS.duplication });
   if (historicalSecrets) parts.push({ score: historicalSecrets.score, weight: TECHNICAL_SUBWEIGHTS.historicalSecrets });
+  if (bandit) parts.push({ score: bandit.score, weight: TECHNICAL_SUBWEIGHTS.bandit });
+  if (dependencyVulns) parts.push({ score: dependencyVulns.score, weight: TECHNICAL_SUBWEIGHTS.dependencyVulns });
 
   const totalWeight = parts.reduce((sum, p) => sum + p.weight, 0);
   const blended = parts.reduce((sum, p) => sum + p.score * p.weight, 0) / totalWeight;
@@ -187,7 +265,7 @@ function topFindings(semgrepResults, limit = 10) {
     }));
 }
 
-function renderMarkdown({ composite, tier, technical, duplication, historicalSecrets, cognitive, intent, top, repoPath }) {
+function renderMarkdown({ composite, tier, technical, duplication, historicalSecrets, bandit, dependencyVulns, cognitive, intent, top, repoPath }) {
   const lines = [];
   lines.push(`# AI-Debt Report — ${repoPath}`);
   lines.push(`\nGenerated: ${new Date().toISOString()}\n`);
@@ -199,7 +277,7 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
   lines.push(`| Intent debt | ${intent.score}/100 | 25% |`);
 
   lines.push(`\n## Technical Debt — ${technical.totalFindings} Semgrep findings\n`);
-  lines.push(`Blended from Semgrep (60%), duplication (20%), historical secrets (20%):\n`);
+  lines.push(`Blended from Semgrep, Bandit, duplication, historical secrets, and dependency vulnerabilities (only tools that actually ran contribute; see methodology note):\n`);
   for (const [category, stats] of Object.entries(technical.byCategory)) {
     lines.push(`- **${category}**: ${stats.count} findings (weighted ${stats.weight})`);
   }
@@ -208,6 +286,26 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
   for (const f of top) {
     lines.push(`- [${f.severity}] \`${f.rule}\` — ${f.path}:${f.line} — ${f.message}`);
     if (f.dampenedReason) lines.push(`  - ⚠ *${f.dampenedReason}*`);
+  }
+
+  if (bandit) {
+    lines.push(`\n### Python Security (Bandit) — ${bandit.totalFindings} findings\n`);
+    lines.push(`- sub-score ${bandit.score}/100 — by severity: ${Object.entries(bandit.byCategory).map(([sev, n]) => `${sev} ${n}`).join(", ") || "none"}`);
+    for (const f of bandit.top) {
+      lines.push(`  - [${f.severity}] \`${f.testId}\` — ${f.file}:${f.line} — ${f.text}`);
+    }
+  }
+
+  if (dependencyVulns) {
+    lines.push(`\n### Dependency Vulnerabilities (pip-audit)\n`);
+    if (dependencyVulns.vulnerablePackageCount === 0) {
+      lines.push(`- No known-vulnerable dependencies found — sub-score 0/100`);
+    } else {
+      lines.push(`- **${dependencyVulns.vulnerablePackageCount} vulnerable package(s)**, ${dependencyVulns.totalVulnCount} known CVE(s) total — sub-score ${dependencyVulns.score}/100`);
+      for (const p of dependencyVulns.packages) {
+        lines.push(`  - \`${p.name}==${p.version}\` — ${p.vulnIds.join(", ")}${p.fixVersions.length ? ` (fix: ${p.fixVersions.join(", ")})` : ""}`);
+      }
+    }
   }
 
   if (duplication) {
@@ -270,7 +368,7 @@ function categoryBarHtml(label, score, weightLabel) {
     </div>`;
 }
 
-function renderHtml({ composite, tier, technical, duplication, historicalSecrets, cognitive, intent, top, repoPath }) {
+function renderHtml({ composite, tier, technical, duplication, historicalSecrets, bandit, dependencyVulns, cognitive, intent, top, repoPath }) {
   const tierColor = TIER_COLORS[tier];
 
   const findingsRows = top
@@ -377,6 +475,27 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
     </div>
 
     ${
+      bandit
+        ? `<div class="card"><h2>Python Security (Bandit) — ${bandit.totalFindings} findings</h2>
+           <p>sub-score ${bandit.score}/100 — by severity: ${escapeHtml(Object.entries(bandit.byCategory).map(([sev, n]) => `${sev} ${n}`).join(", ") || "none")}</p>
+           <table><thead><tr><th>Severity</th><th>Test</th><th>Location</th><th>Detail</th></tr></thead><tbody>
+           ${bandit.top.map((f) => `<tr><td><span class="badge" style="background:${SEVERITY_COLORS[f.severity] || "#64748b"}">${f.severity}</span></td><td><code>${escapeHtml(f.testId)}</code></td><td class="path">${escapeHtml(f.file)}:${f.line}</td><td>${escapeHtml(f.text)}</td></tr>`).join("")}
+           </tbody></table></div>`
+        : ""
+    }
+
+    ${
+      dependencyVulns
+        ? dependencyVulns.vulnerablePackageCount === 0
+          ? `<div class="card"><h2>Dependency Vulnerabilities (pip-audit)</h2><p>No known-vulnerable dependencies found — sub-score 0/100</p></div>`
+          : `<div class="card"><h2>Dependency Vulnerabilities (pip-audit)</h2>
+             <p><strong style="color:#dc2626">${dependencyVulns.vulnerablePackageCount} vulnerable package(s)</strong>, ${dependencyVulns.totalVulnCount} known CVE(s) total — sub-score ${dependencyVulns.score}/100</p>
+             <ul>${dependencyVulns.packages.map((p) => `<li><code>${escapeHtml(p.name)}==${escapeHtml(p.version)}</code> — ${escapeHtml(p.vulnIds.join(", "))}${p.fixVersions.length ? ` (fix: ${escapeHtml(p.fixVersions.join(", "))})` : ""}</li>`).join("")}</ul>
+             </div>`
+        : ""
+    }
+
+    ${
       duplication
         ? `<div class="card"><h2>Duplication (jscpd)</h2><p>${duplication.percentage.toFixed(1)}% duplicated lines (${duplication.duplicatedLines}/${duplication.totalLines}) across ${duplication.clones} clone pairs — sub-score ${duplication.score}/100</p></div>`
         : ""
@@ -417,7 +536,8 @@ function main() {
   if (!args.semgrep || !args.gitmine) {
     console.error(
       "Usage: node score.js --semgrep semgrep.json --gitmine gitmine.json " +
-        "[--jscpd jscpd-report.json] [--gitleaks gitleaks.json] [--out report.md] [--html report.html] [--json raw.json]"
+        "[--jscpd jscpd-report.json] [--gitleaks gitleaks.json] [--bandit bandit.json] " +
+        "[--pipaudit pip-audit.json] [--out report.md] [--html report.html] [--json raw.json]"
     );
     process.exit(1);
   }
@@ -426,13 +546,17 @@ function main() {
   const gitMine = loadJson(args.gitmine);
   const jscpdResults = args.jscpd ? loadJson(args.jscpd) : null;
   const gitleaksResults = args.gitleaks ? loadJson(args.gitleaks) : null;
+  const banditResults = args.bandit ? loadJson(args.bandit) : null;
+  const pipAuditResults = args.pipaudit ? loadJson(args.pipaudit) : null;
 
   const totalFilesScanned = gitMine.busFactorStats?.totalFilesTracked || 1;
 
   const semgrepTechnical = scoreTechnicalDebt(semgrepResults, totalFilesScanned);
   const duplication = scoreDuplication(jscpdResults);
   const historicalSecrets = scoreHistoricalSecrets(gitleaksResults);
-  const blendedScore = combineTechnicalDebt(semgrepTechnical.score, duplication, historicalSecrets);
+  const bandit = scoreBandit(banditResults, totalFilesScanned);
+  const dependencyVulns = scoreDependencyVulnerabilities(pipAuditResults);
+  const blendedScore = combineTechnicalDebt(semgrepTechnical.score, duplication, historicalSecrets, bandit, dependencyVulns);
   const technical = { ...semgrepTechnical, blendedScore };
 
   const cognitive = scoreCognitiveDebt(gitMine);
@@ -452,6 +576,8 @@ function main() {
     technical,
     duplication,
     historicalSecrets,
+    bandit,
+    dependencyVulns,
     cognitive,
     intent,
     top,
@@ -472,6 +598,8 @@ function main() {
       technical,
       duplication,
       historicalSecrets,
+      bandit,
+      dependencyVulns,
       cognitive,
       intent,
       top,
@@ -486,7 +614,11 @@ function main() {
   if (args.json) {
     fs.writeFileSync(
       args.json,
-      JSON.stringify({ composite, tier, technical, duplication, historicalSecrets, cognitive, intent }, null, 2)
+      JSON.stringify(
+        { composite, tier, technical, duplication, historicalSecrets, bandit, dependencyVulns, cognitive, intent },
+        null,
+        2
+      )
     );
   }
 }
