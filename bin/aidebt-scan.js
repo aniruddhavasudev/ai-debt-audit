@@ -10,7 +10,7 @@
  *
  * Usage:
  *   aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json raw.json]
- *                              [--sarif results.sarif] [--fail-on-score N]
+ *                              [--sarif results.sarif] [--fail-on-score N] [--pdf report.pdf]
  *
  * By default, both a Markdown report (--out, default ./ai-debt-report.md)
  * and an HTML report (same name, .html extension) are written. Pass
@@ -20,6 +20,9 @@
  * github/codeql-action/upload-sarif to surface findings in the Security tab).
  * --fail-on-score N exits non-zero if the composite score is >= N — the
  * hook a CI pipeline needs to actually block a PR, not just log a number.
+ * --pdf renders the HTML report to PDF via headless Chrome/Chromium — the
+ * actual client-deliverable format, not just an internal artifact. Requires
+ * an HTML report to exist (not compatible with --html "").
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -249,7 +252,42 @@ function runGitleaks(targetPath, outPath) {
   return fileExists(outPath) ? outPath : null;
 }
 
-function printSummaryBox(scores, outPath, htmlPath) {
+// Prefer chromium (lighter, common on CI images) but fall back to a full
+// Chrome install — either one's headless print-to-pdf is the same engine
+// that renders the HTML report, so the PDF is pixel-faithful to it.
+const PDF_RENDERER_CANDIDATES = ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"];
+
+function findPdfRenderer() {
+  return PDF_RENDERER_CANDIDATES.find(binExists) || null;
+}
+
+function runPdfExport(htmlPath, pdfPath) {
+  const renderer = findPdfRenderer();
+  if (!renderer) {
+    console.error(c.yellow("  no Chromium/Chrome found on PATH — skipping PDF export"));
+    return null;
+  }
+  try {
+    execFileSync(
+      renderer,
+      [
+        "--headless",
+        "--disable-gpu",
+        "--no-sandbox",
+        "--no-pdf-header-footer",
+        `--print-to-pdf=${pdfPath}`,
+        `file://${htmlPath}`,
+      ],
+      { stdio: ["ignore", "ignore", "ignore"] }
+    );
+  } catch {
+    // Headless Chrome's own harmless dbus/gpu warnings can make this exit
+    // non-zero even on success — check for the actual output file instead.
+  }
+  return fileExists(pdfPath) ? pdfPath : null;
+}
+
+function printSummaryBox(scores, outPath, htmlPath, pdfPath) {
   const { composite, tier, technical, cognitive, intent, weights } = scores;
   // Fall back to the historical 50/25/25 default only if an older score.js
   // (pre-config-support) produced this JSON without a weights field.
@@ -270,6 +308,7 @@ function printSummaryBox(scores, outPath, htmlPath) {
   console.log(rule);
   console.log(`  ${c.dim("Markdown:")} ${outPath}`);
   if (htmlPath) console.log(`  ${c.dim("HTML:    ")} ${htmlPath}`);
+  if (pdfPath) console.log(`  ${c.dim("PDF:     ")} ${pdfPath}`);
   console.log(rule + "\n");
 }
 
@@ -326,9 +365,19 @@ function main() {
   const scores = JSON.parse(fs.readFileSync(rawJsonPath, "utf8"));
   if (args.json) fs.copyFileSync(rawJsonPath, path.resolve(args.json));
 
+  let pdfPath = null;
+  if (args.pdf) {
+    if (!htmlPath) {
+      console.error(c.yellow("  --pdf requires an HTML report to render from — can't combine with --html \"\""));
+    } else {
+      pdfPath = path.resolve(args.pdf);
+      step("PDF export", () => runPdfExport(htmlPath, pdfPath));
+    }
+  }
+
   fs.rmSync(workDir, { recursive: true, force: true });
 
-  printSummaryBox(scores, outPath, htmlPath);
+  printSummaryBox(scores, outPath, htmlPath, pdfPath);
 
   // Propagate score.js's exit code — this is how --fail-on-score reaches
   // a CI system: a real non-zero exit, not just text in a log.
