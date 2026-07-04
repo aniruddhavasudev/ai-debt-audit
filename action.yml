@@ -18,6 +18,10 @@ inputs:
     description: 'Upload findings to GitHub code scanning (Security tab) via SARIF'
     required: false
     default: 'true'
+  diff:
+    description: 'Base ref to diff against — only scans changed files instead of the whole repo. Pass ${{ github.event.pull_request.base.sha }} for PR-scoped scans. Requires the checkout step to use fetch-depth: 0.'
+    required: false
+    default: ''
 
 outputs:
   score:
@@ -66,6 +70,9 @@ runs:
         ARGS=("${{ inputs.path }}" --out ai-debt-report.md --html ai-debt-report.html --sarif ai-debt-results.sarif --json ai-debt-scores.json)
         if [ -n "${{ inputs.fail-on-score }}" ]; then
           ARGS+=(--fail-on-score "${{ inputs.fail-on-score }}")
+        fi
+        if [ -n "${{ inputs.diff }}" ]; then
+          ARGS+=(--diff "${{ inputs.diff }}")
         fi
         node "${{ github.action_path }}/bin/aidebt-scan.js" "${ARGS[@]}"
         echo "exit_code=$?" >> "$GITHUB_OUTPUT"

@@ -12,11 +12,18 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # --diff needs the base ref's history actually present locally —
+          # a shallow (default) checkout only has the PR's own commits,
+          # and `git diff` against a ref it doesn't have would just fail
+          # and fall back to a full scan (safe, but defeats the point).
+          fetch-depth: 0
 
-      - name: Run AI-Debt Audit on this repo
+      - name: Run AI-Debt Audit on changed files only
         uses: ./
         with:
           path: .
+          diff: ${{ github.event.pull_request.base.sha }}
           # Informational only for now — this repo's own score isn't
           # calibrated as a gate yet, so it reports but doesn't fail the PR.
           fail-on-score: ''

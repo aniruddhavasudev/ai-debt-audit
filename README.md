@@ -97,6 +97,8 @@ aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json scores
 
 `--history history.json` appends this run's score to a small local JSON file and shows the trend against the previous run right in the terminal summary — improving or worsening, not just a snapshot. Point it at the same file every time you scan a given repo and it becomes a running log.
 
+`--diff main` scopes Semgrep/Bandit to only the files that actually changed vs `main` (or any ref), instead of the whole repo — faster, and it answers "did this PR add debt" instead of "what's wrong with everything." Falls back to a full scan if the ref can't be resolved. (git-mine/jscpd/gitleaks stay repo-wide regardless — bus factor and duplication are inherently whole-codebase questions, not per-file ones.)
+
 ## Customizing the score with `.aidebtrc.json`
 
 Drop this at the root of the repo being scanned to override the defaults:

@@ -11,7 +11,7 @@
  * Usage:
  *   aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json raw.json]
  *                              [--sarif results.sarif] [--fail-on-score N] [--pdf report.pdf]
- *                              [--history history.json]
+ *                              [--history history.json] [--diff base-ref]
  *
  * By default, both a Markdown report (--out, default ./ai-debt-report.md)
  * and an HTML report (same name, .html extension) are written. Pass
@@ -28,6 +28,11 @@
  * trend (improving/worsening) vs the previous run — "is this getting
  * better or worse" is a different question than "what's the score now,"
  * and one-shot manual audits can't answer it at all.
+ * --diff base-ref scopes Semgrep/Bandit to only files changed vs that ref
+ * (git-mine/jscpd/gitleaks stay repo-wide — bus factor and duplication are
+ * inherently whole-codebase concerns). Falls back to a full scan if the
+ * ref can't be resolved. This is what makes the GitHub Action fast and
+ * answer "did THIS PR add debt" instead of "what's wrong with everything."
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -83,6 +88,29 @@ function fileExists(p) {
     return fs.statSync(p).isFile();
   } catch {
     return false;
+  }
+}
+
+// For --diff mode: only run static analysis against files that actually
+// changed vs a base ref, instead of the whole repo. ACMR = Added, Copied,
+// Modified, Renamed — deliberately excludes Deleted, since there's nothing
+// left on disk to scan.
+function getChangedFiles(targetPath, baseRef) {
+  try {
+    const raw = execFileSync(
+      "git",
+      ["-C", targetPath, "diff", "--name-only", "--diff-filter=ACMR", `${baseRef}...HEAD`],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+    );
+    return raw
+      .split("\n")
+      .map((f) => f.trim())
+      .filter(Boolean)
+      .map((f) => path.join(targetPath, f))
+      .filter(fileExists);
+  } catch (err) {
+    console.error(c.yellow(`  Warning: could not diff against '${baseRef}' (${err.message.split("\n")[0]}) — falling back to full scan`));
+    return null;
   }
 }
 
@@ -181,10 +209,11 @@ function step(label, fn) {
 // only our rules do.
 const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask"];
 
-function runSemgrep(targetPath, outPath) {
+function runSemgrep(targetPath, outPath, changedFiles) {
   const configArgs = [RULES_DIR, ...SEMGREP_REGISTRY_PACKS].flatMap((cfg) => ["--config", cfg]);
+  const scanTargets = changedFiles && changedFiles.length > 0 ? changedFiles : [targetPath];
   try {
-    execFileSync("semgrep", [...configArgs, targetPath, "--json", "--output", outPath, "--quiet"], {
+    execFileSync("semgrep", [...configArgs, ...scanTargets, "--json", "--output", outPath, "--quiet"], {
       stdio: ["ignore", "ignore", "ignore"],
     });
     return outPath;
@@ -195,7 +224,7 @@ function runSemgrep(targetPath, outPath) {
     // Registry packs need network access — if that's what failed, fall
     // back to our own rules only rather than losing the whole scan.
     try {
-      execFileSync("semgrep", ["--config", RULES_DIR, targetPath, "--json", "--output", outPath, "--quiet"], {
+      execFileSync("semgrep", ["--config", RULES_DIR, ...scanTargets, "--json", "--output", outPath, "--quiet"], {
         stdio: ["ignore", "ignore", "ignore"],
       });
       console.error(c.yellow("  Semgrep registry packs (p/django, p/flask) unavailable — used local rules only"));
@@ -208,13 +237,22 @@ function runSemgrep(targetPath, outPath) {
   }
 }
 
-function runBandit(targetPath, outPath) {
+function runBandit(targetPath, outPath, changedFiles) {
   if (!binExists("bandit")) {
     console.error(c.yellow("  bandit not found on PATH — skipping Python security scan (pip install bandit)"));
     return null;
   }
+  const pythonFiles = changedFiles ? changedFiles.filter((f) => f.endsWith(".py")) : null;
+  if (changedFiles && pythonFiles.length === 0) {
+    // Diff mode with no changed Python files — write an empty-but-valid
+    // Bandit report rather than skipping, so scoring still reflects "ran,
+    // found nothing" instead of silently omitting the tool from the blend.
+    fs.writeFileSync(outPath, JSON.stringify({ results: [] }));
+    return outPath;
+  }
+  const banditArgs = pythonFiles ? [...pythonFiles, "-f", "json", "-o", outPath] : ["-r", targetPath, "-f", "json", "-o", outPath];
   try {
-    execFileSync("bandit", ["-r", targetPath, "-f", "json", "-o", outPath], { stdio: ["ignore", "ignore", "ignore"] });
+    execFileSync("bandit", banditArgs, { stdio: ["ignore", "ignore", "ignore"] });
   } catch {
     // Bandit exits non-zero when it finds issues — that's success for us,
     // not an error. Only a missing output file is a real failure.
@@ -382,14 +420,22 @@ function main() {
 
   console.log(c.bold(`\nAI-Debt Scan`) + c.dim(` — ${targetPath}\n`));
 
+  let changedFiles = null;
+  if (args.diff) {
+    changedFiles = getChangedFiles(targetPath, args.diff);
+    if (changedFiles) {
+      console.log(c.cyan(`  Diff mode: scanning ${changedFiles.length} changed file(s) vs ${args.diff}`));
+    }
+  }
+
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "aidebt-"));
 
-  const semgrepOut = step("Semgrep (technical debt)", () => runSemgrep(targetPath, path.join(workDir, "semgrep.json")));
+  const semgrepOut = step("Semgrep (technical debt)", () => runSemgrep(targetPath, path.join(workDir, "semgrep.json"), changedFiles));
   if (semgrepOut) dampenMiddlewareCoveredFindings(semgrepOut, targetPath);
   const gitmineOut = step("git-mine (cognitive + intent debt)", () => runGitMine(targetPath, path.join(workDir, "gitmine.json")));
   const jscpdOut = step("jscpd (duplication)", () => runJscpd(targetPath, path.join(workDir, "jscpd")));
   const gitleaksOut = step("gitleaks (historical secrets)", () => runGitleaks(targetPath, path.join(workDir, "gitleaks.json")));
-  const banditOut = step("bandit (Python security)", () => runBandit(targetPath, path.join(workDir, "bandit.json")));
+  const banditOut = step("bandit (Python security)", () => runBandit(targetPath, path.join(workDir, "bandit.json"), changedFiles));
   const pipAuditOut = step("pip-audit (dependency vulnerabilities)", () => runPipAudit(targetPath, path.join(workDir, "pip-audit.json")));
 
   if (!semgrepOut || !gitmineOut) {
@@ -413,6 +459,7 @@ function main() {
   if (htmlPath) scoreArgs.push("--html", htmlPath);
   if (args.sarif) scoreArgs.push("--sarif", path.resolve(args.sarif));
   if (args["fail-on-score"] !== undefined) scoreArgs.push("--fail-on-score", args["fail-on-score"]);
+  if (changedFiles) scoreArgs.push("--files-scanned", String(changedFiles.length));
 
   // spawnSync (not execFileSync) deliberately — once --fail-on-score can
   // make score.js exit non-zero on purpose, execFileSync would throw here
