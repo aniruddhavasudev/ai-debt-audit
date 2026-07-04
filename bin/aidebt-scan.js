@@ -9,7 +9,11 @@
  * require touching this file.
  *
  * Usage:
- *   aidebt-scan <path-to-repo> [--out report.md] [--json raw.json]
+ *   aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json raw.json]
+ *
+ * By default, both a Markdown report (--out, default ./ai-debt-report.md)
+ * and an HTML report (same name, .html extension) are written. Pass
+ * --html "" to skip HTML generation.
  */
 
 import { execFileSync } from "node:child_process";
@@ -17,6 +21,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { c, tierColor, barChart } from "../scripts/colors.js";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULES_DIR = path.join(PACKAGE_ROOT, "rules");
@@ -98,65 +103,69 @@ function dampenMiddlewareCoveredFindings(semgrepOutPath, targetPath) {
   if (adjustedCount > 0) {
     fs.writeFileSync(semgrepOutPath, JSON.stringify(data));
     console.error(
-      `  ℹ Found centralized auth middleware (${relMiddlewarePath}) — dampened ${adjustedCount} auth-check finding(s)`
+      c.cyan(`  ℹ Found centralized auth middleware (${relMiddlewarePath}) — dampened ${adjustedCount} auth-check finding(s)`)
     );
   }
 }
 
+function step(label, fn) {
+  process.stderr.write(c.dim(`→ ${label}...`));
+  const start = Date.now();
+  const result = fn();
+  const ms = Date.now() - start;
+  const status = result ? c.green("✓") : c.red("✗ skipped");
+  process.stderr.write(`\r${status} ${label} ${c.dim(`(${ms}ms)`)}          \n`);
+  return result;
+}
+
 function runSemgrep(targetPath, outPath) {
-  console.error("→ Running Semgrep (technical debt)...");
   try {
     execFileSync(
       "semgrep",
       ["--config", RULES_DIR, targetPath, "--json", "--output", outPath, "--quiet"],
-      { stdio: ["ignore", "ignore", "inherit"] }
+      { stdio: ["ignore", "ignore", "ignore"] }
     );
     return outPath;
-  } catch (err) {
+  } catch {
     // Semgrep exits non-zero when findings exist AND when it errors — the
     // only reliable signal is whether it actually wrote a valid JSON file.
     if (fileExists(outPath)) return outPath;
-    console.error("  ✗ Semgrep failed to run — is it installed? (pip install semgrep)");
+    console.error(c.red("  Semgrep failed to run — is it installed? (pip install semgrep)"));
     return null;
   }
 }
 
 function runGitMine(targetPath, outPath) {
-  console.error("→ Running git-mine (cognitive + intent debt)...");
   try {
     execFileSync("node", [GIT_MINE_SCRIPT, targetPath], {
-      stdio: ["ignore", fs.openSync(outPath, "w"), "inherit"],
+      stdio: ["ignore", fs.openSync(outPath, "w"), "ignore"],
     });
     return outPath;
-  } catch (err) {
-    console.error("  ✗ git-mine failed — is this a git repo with at least one commit?");
+  } catch {
+    console.error(c.red("  git-mine failed — is this a git repo with at least one commit?"));
     return null;
   }
 }
 
 function runJscpd(targetPath, outDir) {
-  console.error("→ Running jscpd (duplication)...");
   if (!fileExists(JSCPD_BIN)) {
-    console.error("  ⚠ jscpd not found in node_modules — skipping duplication check (run `npm install`)");
+    console.error(c.yellow("  jscpd not found in node_modules — skipping duplication check (run `npm install`)"));
     return null;
   }
+  const reportPath = path.join(outDir, "jscpd-report.json");
   try {
     execFileSync(JSCPD_BIN, [targetPath, "--reporters", "json", "--output", outDir, "--silent"], {
-      stdio: ["ignore", "ignore", "inherit"],
+      stdio: ["ignore", "ignore", "ignore"],
     });
-    const reportPath = path.join(outDir, "jscpd-report.json");
-    return fileExists(reportPath) ? reportPath : null;
   } catch {
     // jscpd exits non-zero on some duplicate thresholds — check for the file directly.
-    const reportPath = path.join(outDir, "jscpd-report.json");
-    return fileExists(reportPath) ? reportPath : null;
   }
+  return fileExists(reportPath) ? reportPath : null;
 }
 
 function runGitleaks(targetPath, outPath) {
-  console.error("→ Running gitleaks (historical secrets)...");
   if (!binExists("gitleaks")) {
-    console.error("  ⚠ gitleaks not found on PATH — skipping historical secrets check");
+    console.error(c.yellow("  gitleaks not found on PATH — skipping historical secrets check"));
     return null;
   }
   try {
@@ -172,45 +181,75 @@ function runGitleaks(targetPath, outPath) {
   return fileExists(outPath) ? outPath : null;
 }
 
+function printSummaryBox(scores, outPath, htmlPath) {
+  const { composite, tier, technical, cognitive, intent } = scores;
+  const width = 56;
+  const rule = c.dim("─".repeat(width));
+
+  console.log("\n" + rule);
+  console.log(c.bold("  AI-DEBT REPORT"));
+  console.log(rule);
+  console.log(
+    `  Composite Score: ${c.bold(composite + "/100")}   ${tierColor(tier, `[${tier} Risk]`)}`
+  );
+  console.log(rule);
+  console.log(`  Technical debt   ${barChart(technical.blendedScore, 24)}  ${String(technical.blendedScore).padStart(3)}/100  (50%)`);
+  console.log(`  Cognitive debt   ${barChart(cognitive.score, 24)}  ${String(cognitive.score).padStart(3)}/100  (25%)`);
+  console.log(`  Intent debt      ${barChart(intent.score, 24)}  ${String(intent.score).padStart(3)}/100  (25%)`);
+  console.log(rule);
+  console.log(`  ${c.dim("Markdown:")} ${outPath}`);
+  if (htmlPath) console.log(`  ${c.dim("HTML:    ")} ${htmlPath}`);
+  console.log(rule + "\n");
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const targetPath = path.resolve(args._[0] || ".");
 
   if (!fs.existsSync(targetPath)) {
-    console.error(`Error: path does not exist: ${targetPath}`);
+    console.error(c.red(`Error: path does not exist: ${targetPath}`));
     process.exit(1);
   }
 
-  console.error(`AI-Debt Scan — ${targetPath}\n`);
+  console.log(c.bold(`\nAI-Debt Scan`) + c.dim(` — ${targetPath}\n`));
 
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "aidebt-"));
-  const semgrepOut = runSemgrep(targetPath, path.join(workDir, "semgrep.json"));
+
+  const semgrepOut = step("Semgrep (technical debt)", () => runSemgrep(targetPath, path.join(workDir, "semgrep.json")));
   if (semgrepOut) dampenMiddlewareCoveredFindings(semgrepOut, targetPath);
-  const gitmineOut = runGitMine(targetPath, path.join(workDir, "gitmine.json"));
-  const jscpdOut = runJscpd(targetPath, path.join(workDir, "jscpd"));
-  const gitleaksOut = runGitleaks(targetPath, path.join(workDir, "gitleaks.json"));
+  const gitmineOut = step("git-mine (cognitive + intent debt)", () => runGitMine(targetPath, path.join(workDir, "gitmine.json")));
+  const jscpdOut = step("jscpd (duplication)", () => runJscpd(targetPath, path.join(workDir, "jscpd")));
+  const gitleaksOut = step("gitleaks (historical secrets)", () => runGitleaks(targetPath, path.join(workDir, "gitleaks.json")));
 
   if (!semgrepOut || !gitmineOut) {
     console.error(
-      "\nCannot produce a score without Semgrep and git-mine results — both are required inputs, not optional enrichments."
+      c.red("\nCannot produce a score without Semgrep and git-mine results — both are required inputs, not optional enrichments.")
     );
     process.exit(1);
   }
 
-  console.error("→ Scoring...\n");
   const scoreArgs = [SCORE_SCRIPT, "--semgrep", semgrepOut, "--gitmine", gitmineOut];
   if (jscpdOut) scoreArgs.push("--jscpd", jscpdOut);
   if (gitleaksOut) scoreArgs.push("--gitleaks", gitleaksOut);
 
   const outPath = args.out ? path.resolve(args.out) : path.resolve("ai-debt-report.md");
-  scoreArgs.push("--out", outPath);
-  if (args.json) scoreArgs.push("--json", path.resolve(args.json));
+  const htmlPath = args.html === undefined ? outPath.replace(/\.md$/, "") + ".html" : args.html ? path.resolve(args.html) : null;
+  const rawJsonPath = path.join(workDir, "scores.json");
 
-  execFileSync("node", scoreArgs, { stdio: "inherit" });
+  scoreArgs.push("--out", outPath, "--json", rawJsonPath);
+  if (htmlPath) scoreArgs.push("--html", htmlPath);
+
+  step("Scoring", () => {
+    execFileSync("node", scoreArgs, { stdio: ["ignore", "ignore", "ignore"] });
+    return true;
+  });
+
+  const scores = JSON.parse(fs.readFileSync(rawJsonPath, "utf8"));
+  if (args.json) fs.copyFileSync(rawJsonPath, path.resolve(args.json));
 
   fs.rmSync(workDir, { recursive: true, force: true });
 
-  console.error(`\nDone. Report: ${outPath}`);
+  printSummaryBox(scores, outPath, htmlPath);
 }
 
 main();
