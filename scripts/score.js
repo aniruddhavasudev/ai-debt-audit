@@ -275,6 +275,96 @@ function topFindings(semgrepResults, limit = 10) {
     }));
 }
 
+const SARIF_LEVEL = {
+  ERROR: "error",
+  WARNING: "warning",
+  INFO: "note",
+  HIGH: "error",
+  MEDIUM: "warning",
+  LOW: "note",
+};
+
+// SARIF (Static Analysis Results Interchange Format) is the schema GitHub's
+// own Security tab natively understands — uploading this via the
+// `github/codeql-action/upload-sarif` action surfaces findings inline on
+// PRs and in the repo's Security dashboard, instead of only living inside
+// our own Markdown/HTML report. This is what makes the GitHub Action
+// integration a real code-scanning tool rather than just a CI log dump.
+function renderSarif(semgrepResults, banditResults, repoRoot) {
+  const rules = new Map();
+  const results = [];
+
+  const toRelative = (p) => (p ? path.relative(repoRoot, p) || path.basename(p) : p);
+
+  for (const f of semgrepResults.results || []) {
+    const ruleId = f.check_id.split(".").pop();
+    if (!rules.has(ruleId)) {
+      rules.set(ruleId, {
+        id: ruleId,
+        shortDescription: { text: (f.extra?.message || ruleId).trim().split(".")[0] },
+        fullDescription: { text: (f.extra?.message || "").trim().replace(/\s+/g, " ") },
+        properties: { category: f.extra?.metadata?.ai_debt_category || "uncategorized" },
+      });
+    }
+    results.push({
+      ruleId,
+      level: SARIF_LEVEL[f.extra?.severity] || "warning",
+      message: { text: (f.extra?.message || "").trim().replace(/\s+/g, " ") },
+      locations: [
+        {
+          physicalLocation: {
+            artifactLocation: { uri: toRelative(f.path) },
+            region: { startLine: Math.max(1, f.start?.line || 1) },
+          },
+        },
+      ],
+    });
+  }
+
+  for (const f of banditResults?.results || []) {
+    const ruleId = f.test_id;
+    if (!rules.has(ruleId)) {
+      rules.set(ruleId, {
+        id: ruleId,
+        shortDescription: { text: (f.issue_text || ruleId).trim().split(".")[0] },
+        fullDescription: { text: f.issue_text || "" },
+        properties: { category: "security" },
+      });
+    }
+    results.push({
+      ruleId,
+      level: SARIF_LEVEL[f.issue_severity] || "warning",
+      message: { text: f.issue_text || "" },
+      locations: [
+        {
+          physicalLocation: {
+            artifactLocation: { uri: toRelative(f.filename) },
+            region: { startLine: Math.max(1, f.line_number || 1) },
+          },
+        },
+      ],
+    });
+  }
+
+  return {
+    $schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+    version: "2.1.0",
+    runs: [
+      {
+        tool: {
+          driver: {
+            name: "ai-debt-audit",
+            informationUri: "https://github.com/aniruddhavasudev/ai-debt-audit",
+            version: "1.0.0",
+            rules: [...rules.values()],
+          },
+        },
+        results,
+      },
+    ],
+  };
+}
+
 function renderMarkdown({ composite, tier, technical, duplication, historicalSecrets, bandit, dependencyVulns, cognitive, intent, top, repoPath }) {
   const lines = [];
   lines.push(`# AI-Debt Report — ${repoPath}`);
@@ -547,7 +637,8 @@ function main() {
     console.error(
       "Usage: node score.js --semgrep semgrep.json --gitmine gitmine.json " +
         "[--jscpd jscpd-report.json] [--gitleaks gitleaks.json] [--bandit bandit.json] " +
-        "[--pipaudit pip-audit.json] [--out report.md] [--html report.html] [--json raw.json]"
+        "[--pipaudit pip-audit.json] [--out report.md] [--html report.html] [--json raw.json] " +
+        "[--sarif results.sarif] [--fail-on-score N]"
     );
     process.exit(1);
   }
@@ -641,6 +732,23 @@ function main() {
         2
       )
     );
+  }
+
+  if (args.sarif) {
+    const sarif = renderSarif(semgrepResults, banditResults, repoRoot);
+    fs.writeFileSync(args.sarif, JSON.stringify(sarif, null, 2));
+    console.error(`SARIF written to ${args.sarif}`);
+  }
+
+  // Non-zero exit lets CI treat "AI-debt score too high" as a failed check,
+  // the same way a failed test suite would be. Threshold is opt-in — a
+  // bare `score.js` run should never fail just because it ran.
+  if (args["fail-on-score"] !== undefined) {
+    const threshold = Number(args["fail-on-score"]);
+    if (composite >= threshold) {
+      console.error(`\nComposite score ${composite} >= threshold ${threshold} — failing.`);
+      process.exitCode = 1;
+    }
   }
 }
 

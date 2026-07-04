@@ -10,13 +10,19 @@
  *
  * Usage:
  *   aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json raw.json]
+ *                              [--sarif results.sarif] [--fail-on-score N]
  *
  * By default, both a Markdown report (--out, default ./ai-debt-report.md)
  * and an HTML report (same name, .html extension) are written. Pass
  * --html "" to skip HTML generation.
+ *
+ * --sarif writes GitHub's native code-scanning format (upload with
+ * github/codeql-action/upload-sarif to surface findings in the Security tab).
+ * --fail-on-score N exits non-zero if the composite score is >= N — the
+ * hook a CI pipeline needs to actually block a PR, not just log a number.
  */
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -304,11 +310,15 @@ function main() {
 
   scoreArgs.push("--out", outPath, "--json", rawJsonPath);
   if (htmlPath) scoreArgs.push("--html", htmlPath);
+  if (args.sarif) scoreArgs.push("--sarif", path.resolve(args.sarif));
+  if (args["fail-on-score"] !== undefined) scoreArgs.push("--fail-on-score", args["fail-on-score"]);
 
-  step("Scoring", () => {
-    execFileSync("node", scoreArgs, { stdio: ["ignore", "ignore", "ignore"] });
-    return true;
-  });
+  // spawnSync (not execFileSync) deliberately — once --fail-on-score can
+  // make score.js exit non-zero on purpose, execFileSync would throw here
+  // and crash the whole CLI instead of letting us report cleanly and exit
+  // with the right code ourselves.
+  const scoreRun = spawnSync("node", scoreArgs, { stdio: ["ignore", "ignore", "ignore"] });
+  step("Scoring", () => scoreRun.status === 0 || scoreRun.status === 1);
 
   const scores = JSON.parse(fs.readFileSync(rawJsonPath, "utf8"));
   if (args.json) fs.copyFileSync(rawJsonPath, path.resolve(args.json));
@@ -316,6 +326,12 @@ function main() {
   fs.rmSync(workDir, { recursive: true, force: true });
 
   printSummaryBox(scores, outPath, htmlPath);
+
+  // Propagate score.js's exit code — this is how --fail-on-score reaches
+  // a CI system: a real non-zero exit, not just text in a log.
+  if (scoreRun.status && scoreRun.status !== 0) {
+    process.exitCode = scoreRun.status;
+  }
 }
 
 main();
