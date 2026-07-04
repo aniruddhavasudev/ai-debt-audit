@@ -1,0 +1,184 @@
+rules:
+  - id: ai-debt-django-debug-true
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Django DEBUG=True found in a settings file. Ships Django's full
+      interactive debugger and stack traces (including local variables and
+      settings) to any visitor who triggers a 500 — one of the most common
+      "it works in the AI-generated tutorial" settings that never gets
+      flipped off before deploy.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*settings*.py"
+    pattern-regex: '(?m)^\s*DEBUG\s*=\s*True\s*$'
+
+  - id: ai-debt-django-allowed-hosts-wildcard
+    languages: [generic]
+    severity: ERROR
+    message: >
+      ALLOWED_HOSTS set to a wildcard. Common AI "fix" for a
+      DisallowedHost error during local testing that then ships to
+      production unchanged, disabling Django's Host-header validation.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    paths:
+      include:
+        - "*settings*.py"
+    pattern-regex: "ALLOWED_HOSTS\\s*=\\s*\\[\\s*['\"]\\*['\"]"
+
+  - id: ai-debt-django-hardcoded-secret-key
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Django SECRET_KEY hardcoded directly in settings rather than loaded
+      from an environment variable/secrets manager. AI-generated project
+      scaffolds frequently leave the auto-generated dev key in place.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*settings*.py"
+    pattern-regex: "SECRET_KEY\\s*=\\s*['\"][A-Za-z0-9\\-_!@#$%^&*()]{20,}['\"]"
+
+  - id: ai-debt-django-csrf-exempt
+    languages: [python]
+    severity: WARNING
+    message: >
+      @csrf_exempt used on a view. Common AI "fix" when a CSRF token error
+      appears during quick prototyping — removes a real protection instead
+      of wiring the token through correctly.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    pattern: |
+      @csrf_exempt
+      def $FUNC(...):
+          ...
+
+  - id: ai-debt-drf-permission-allowany
+    languages: [python]
+    severity: WARNING
+    message: >
+      Django REST Framework view with permission_classes = [AllowAny].
+      Frequently added by AI assistants to make an endpoint "just work"
+      during development, then left in place on an endpoint that actually
+      needs authentication.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    pattern: permission_classes = [AllowAny]
+
+  - id: ai-debt-django-raw-queryset-injection
+    languages: [python]
+    severity: ERROR
+    message: >
+      Django .raw() queryset built with an f-string/concatenation instead
+      of parameterized arguments. Same SQL-injection failure mode as raw
+      cursor.execute(), specific to the ORM's raw-query escape hatch.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: $MODEL.objects.raw(f"...{$X}...")
+          - pattern: $MODEL.objects.raw("..." + $X + "...")
+
+  - id: ai-debt-flask-debug-true
+    languages: [python]
+    severity: ERROR
+    message: >
+      Flask app.run(debug=True). If this ever runs reachable from outside
+      localhost, Werkzeug's interactive debugger allows arbitrary remote
+      code execution — not a hypothetical, a well-known real-world exploit
+      chain. AI-generated Flask scaffolds default to this constantly.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: app.run(..., debug=True, ...)
+
+  - id: ai-debt-flask-hardcoded-secret-key
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Flask app.secret_key (or SECRET_KEY config) hardcoded as a literal
+      rather than loaded from environment/secrets manager. Compromises
+      session-cookie signing if the source ever leaks.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern-regex: "app\\.secret_key\\s*=\\s*['\"][^'\"]{4,}['\"]"
+
+  - id: ai-debt-flask-ssti-render-template-string
+    languages: [python]
+    severity: ERROR
+    message: >
+      render_template_string() called with an f-string/concatenated value
+      that includes a variable — classic Server-Side Template Injection.
+      AI assistants reach for render_template_string() to "quickly" inject
+      dynamic content without realizing user input can execute as Jinja2
+      template code, a full RCE primitive in Flask.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: render_template_string(f"...{$X}...")
+          - pattern: render_template_string("..." + $X + "...")
+
+  - id: ai-debt-flask-cors-wildcard
+    languages: [generic]
+    severity: WARNING
+    message: >
+      Flask-CORS configured with a wildcard origin. Common AI shortcut to
+      silence a browser CORS error during development; if this is an
+      authenticated API, wildcard origins undermine cookie/credential
+      protections.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    pattern-regex: '(["'']?origins["'']?\s*[:=]\s*["'']\*["'']|CORS\(app\)\s*$)'
+
+  - id: ai-debt-insecure-pickle-loads
+    languages: [python]
+    severity: ERROR
+    message: >
+      pickle.loads() on data that may originate outside the process
+      (session store, cache, request body, message queue). Unlike JSON,
+      unpickling attacker-controlled bytes is a direct remote-code-execution
+      primitive — AI assistants often reach for pickle as a generic
+      "serialize this object" solution without flagging the risk.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: pickle.loads(...)
+
+  - id: ai-debt-flask-route-missing-login-required
+    languages: [python]
+    severity: WARNING
+    message: >
+      Flask route handler queries the database with no @login_required
+      (or equivalent) decorator above it. AI-generated CRUD endpoints often
+      implement the happy-path query and skip the "is this user allowed to
+      do this" check entirely — the same failure mode as the Next.js
+      equivalent rule, here for Flask/SQLAlchemy apps.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern: |
+          @app.route(...)
+          def $FUNC(...):
+              ...
+              $MODEL.query.$OP(...)
+              ...
+      - pattern-not: |
+          @app.route(...)
+          @login_required
+          def $FUNC(...):
+              ...
