@@ -33,7 +33,7 @@ and gitleaks — [instructions here](https://github.com/gitleaks/gitleaks#instal
 
 Then:
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/aniruddhavasudev/ai-debt-audit.git
 cd ai-debt-audit
 npm install
 npm link

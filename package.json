@@ -15,6 +15,11 @@
     "static-analysis"
   ],
   "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aniruddhavasudev/ai-debt-audit.git"
+  },
+  "homepage": "https://github.com/aniruddhavasudev/ai-debt-audit",
   "type": "module",
   "private": true,
   "bin": {
