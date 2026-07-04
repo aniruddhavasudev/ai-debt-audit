@@ -1,0 +1,14 @@
+{
+  "name": "ai-debt-audit",
+  "version": "0.1.0",
+  "description": "Scans a repo for AI-generated technical, cognitive, and intent debt.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "gitmine": "node scripts/git-mine.js",
+    "score": "node scripts/score.js"
+  },
+  "dependencies": {
+    "jscpd": "^5.0.11"
+  }
+}
