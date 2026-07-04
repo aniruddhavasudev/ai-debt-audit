@@ -1,0 +1,83 @@
+rules:
+  - id: ai-debt-useeffect-missing-deps
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      useEffect with an empty or missing dependency array while referencing
+      outer-scope variables. AI-generated React code frequently gets this
+      wrong, causing stale-closure bugs that only show up in production.
+    metadata:
+      ai_debt_category: framework_misuse
+      weight: 3
+    patterns:
+      - pattern: useEffect(() => { ... }, [])
+      - pattern-not: useEffect(() => { }, [])
+
+  - id: ai-debt-inline-object-prop-rerender
+    languages: [javascript, typescript]
+    severity: INFO
+    message: >
+      Inline object/array/arrow-function literal passed as a JSX prop,
+      causing needless re-renders every render cycle. Common in
+      AI-generated components that were never profiled or optimized.
+    metadata:
+      ai_debt_category: framework_misuse
+      weight: 1
+    patterns:
+      - pattern-either:
+          - pattern: <$COMPONENT $PROP={{...}} />
+          - pattern: <$COMPONENT $PROP={() => ...} />
+
+  - id: ai-debt-direct-dom-in-react
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      Direct DOM manipulation (document.getElementById/querySelector) inside
+      a React component instead of refs/state. Sign the AI generated
+      vanilla-JS-style code inside a React file without reconciling with the
+      framework's model.
+    metadata:
+      ai_debt_category: framework_misuse
+      weight: 3
+    patterns:
+      - pattern-either:
+          - pattern: document.getElementById(...)
+          - pattern: document.querySelector(...)
+    paths:
+      include:
+        - "*.jsx"
+        - "*.tsx"
+
+  - id: ai-debt-duplicate-express-route-handler
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >
+      Same route path registered more than once in this file. Typical
+      failure mode when an AI assistant adds a new endpoint by
+      copy-pasting an existing one and forgetting the app already has it,
+      or regenerates a file without full context of what already exists.
+    metadata:
+      ai_debt_category: reinvented_wheel
+      weight: 3
+    patterns:
+      - pattern: app.$METHOD($ROUTE, ...)
+      - pattern-inside: |
+          app.$METHOD($ROUTE, ...)
+          ...
+          app.$METHOD($ROUTE, ...)
+
+  - id: ai-debt-any-type-typescript
+    languages: [typescript]
+    severity: INFO
+    message: >
+      Explicit `any` type. Individually minor, but a high density signals
+      AI-generated TypeScript that was never given real type information
+      (a very common pattern when a model can't infer the shape of an
+      external API response and defaults to `any` to make the error go
+      away).
+    metadata:
+      ai_debt_category: reinvented_wheel
+      weight: 1
+    pattern-either:
+      - pattern: "$X: any"
+      - pattern: "$Y as any"

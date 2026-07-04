@@ -1,0 +1,84 @@
+rules:
+  - id: ai-debt-placeholder-comment
+    languages: [python, javascript, typescript, java, go]
+    severity: WARNING
+    message: >
+      Placeholder/instructional comment left in shipped code (e.g. "your
+      code here", "implement this", "add logic here"). Strong signal that
+      AI-generated scaffolding was never filled in or reviewed before merge.
+    metadata:
+      ai_debt_category: incomplete_implementation
+      weight: 4
+    pattern-regex: '(?i)(your (code|logic|implementation) here|add (your )?(logic|implementation) here|implement this (function|method|logic)|todo:? implement|placeholder implementation)'
+
+  - id: ai-debt-not-implemented-stub
+    languages: [python]
+    severity: WARNING
+    message: >
+      Function body is a bare NotImplementedError/pass stub. Fine during
+      scaffolding, a real problem if it reached main/production branch.
+    metadata:
+      ai_debt_category: incomplete_implementation
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: |
+              def $FUNC(...):
+                  raise NotImplementedError
+          - pattern: |
+              def $FUNC(...):
+                  pass
+
+  - id: ai-debt-mock-data-in-nontst-file
+    languages: [python, javascript, typescript]
+    severity: WARNING
+    message: >
+      Hardcoded mock/sample/dummy data found outside a test/fixture file.
+      AI assistants often generate a working demo with fake data and it
+      never gets swapped for the real data source.
+    metadata:
+      ai_debt_category: incomplete_implementation
+      weight: 3
+    pattern-regex: '(mock_?data|dummy_?data|sample_?data|fake_?data|test_?user@)\s*='
+    paths:
+      exclude:
+        - "*test*"
+        - "*spec*"
+        - "*fixture*"
+        - "*mock*"
+
+  - id: ai-debt-console-log-debug-leftover
+    languages: [javascript, typescript]
+    severity: INFO
+    message: >
+      console.log/debugger left in source. Individually trivial, but a high
+      density across a codebase correlates strongly with unreviewed
+      AI-generated commits (weight this by frequency, not presence).
+    metadata:
+      ai_debt_category: incomplete_implementation
+      weight: 1
+    patterns:
+      - pattern-either:
+          - pattern: console.log(...)
+          - pattern: debugger
+
+  - id: ai-debt-reinvented-stdlib-sort
+    languages: [python]
+    severity: INFO
+    message: >
+      Hand-rolled sorting/searching algorithm where a stdlib equivalent
+      exists (sorted()/list.sort()/bisect). AI models sometimes generate a
+      textbook algorithm from training data instead of recognizing the
+      standard library already solves it — a maintenance and correctness
+      risk versus the battle-tested built-in.
+    metadata:
+      ai_debt_category: reinvented_wheel
+      weight: 2
+    patterns:
+      - pattern-either:
+          - pattern: |
+              for $I in range(len($ARR)):
+                  for $J in range(len($ARR)):
+                      ...
+                      if $ARR[$I] > $ARR[$J]:
+                          ...
