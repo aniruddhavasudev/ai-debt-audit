@@ -135,10 +135,22 @@ function combineTechnicalDebt(semgrepScore, duplication, historicalSecrets) {
   return Math.round(blended);
 }
 
+// Bus-factor risk is only a meaningful *debt* signal once a real team
+// exists to have knowledge silos within. A solo or two-person repo is,
+// by construction, ~100% single-author-per-file — that's just what a
+// small team looks like, not evidence of accumulating AI-assisted risk.
+// This damping factor ramps from 0 (1 total author) to 1 (3+ total
+// authors), so the score only "counts" once a silo is actually possible.
+function teamSizeDampingFactor(totalAuthors) {
+  return Math.min(1, Math.max(0, (totalAuthors - 1) / 2));
+}
+
 function scoreCognitiveDebt(gitMine) {
   const busFactorRiskRatio = gitMine.busFactorStats?.busFactorRiskRatio ?? 0;
-  const score = Math.round(100 * busFactorRiskRatio);
-  return { score, busFactorRiskRatio, ...gitMine.busFactorStats };
+  const totalAuthors = Object.keys(gitMine.commitStats?.authorCounts ?? {}).length;
+  const dampingFactor = teamSizeDampingFactor(totalAuthors);
+  const score = Math.round(100 * busFactorRiskRatio * dampingFactor);
+  return { score, busFactorRiskRatio, totalAuthors, dampingFactor, ...gitMine.busFactorStats };
 }
 
 function scoreIntentDebt(gitMine) {
@@ -171,6 +183,7 @@ function topFindings(semgrepResults, limit = 10) {
       path: f.path,
       line: f.start?.line,
       message: (f.extra?.message || "").trim().replace(/\s+/g, " "),
+      dampenedReason: f.extra?.metadata?.dampened_reason,
     }));
 }
 
@@ -194,6 +207,7 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
   lines.push(`\n### Top findings (by severity weight)\n`);
   for (const f of top) {
     lines.push(`- [${f.severity}] \`${f.rule}\` — ${f.path}:${f.line} — ${f.message}`);
+    if (f.dampenedReason) lines.push(`  - ⚠ *${f.dampenedReason}*`);
   }
 
   if (duplication) {
@@ -214,8 +228,14 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
   }
 
   lines.push(`\n## Cognitive Debt (knowledge concentration)\n`);
-  lines.push(`- Bus-factor risk ratio: ${(cognitive.busFactorRiskRatio * 100).toFixed(1)}% of tracked files have had only one author ever`);
+  lines.push(`- Bus-factor risk ratio (raw): ${(cognitive.busFactorRiskRatio * 100).toFixed(1)}% of tracked files have had only one author ever`);
   lines.push(`- Total files tracked in git history: ${cognitive.totalFilesTracked}`);
+  lines.push(`- Total distinct authors: ${cognitive.totalAuthors} (team-size damping factor: ${cognitive.dampingFactor.toFixed(2)})`);
+  if (cognitive.totalAuthors <= 2) {
+    lines.push(
+      `- ⚠ *Score damped heavily — with only ${cognitive.totalAuthors} total contributor(s), single-author-per-file is structural, not a debt signal.*`
+    );
+  }
 
   lines.push(`\n## Intent Debt (externalized rationale)\n`);
   lines.push(`- Generic/uninformative commit messages: ${(intent.genericMessageRatio * 100).toFixed(1)}% of commits`);

@@ -24,6 +24,19 @@ const GIT_MINE_SCRIPT = path.join(PACKAGE_ROOT, "scripts", "git-mine.js");
 const SCORE_SCRIPT = path.join(PACKAGE_ROOT, "scripts", "score.js");
 const JSCPD_BIN = path.join(PACKAGE_ROOT, "node_modules", ".bin", "jscpd");
 
+// Calibration fix #1: the ai-debt-nextjs-api-route-missing-auth-check rule
+// can only see auth calls made *inside* the flagged function. It cannot see
+// auth enforced centrally in Next.js middleware — a very common, legitimate
+// pattern — so as written it false-positives on every route in any app that
+// does this. We can't fix that inside Semgrep itself (a single rule can't
+// reason across files), so we detect the middleware here, where we have
+// direct filesystem access to the target repo, and dampen the finding's
+// weight rather than trusting it at full confidence.
+const AUTH_MIDDLEWARE_CANDIDATES = ["middleware.ts", "middleware.js", "src/middleware.ts", "src/middleware.js"];
+const AUTH_KEYWORDS_RE = /(auth|session|getUser|getSession|jwt)/i;
+const MISSING_AUTH_CHECK_RULE = "ai-debt-nextjs-api-route-missing-auth-check";
+const MIDDLEWARE_DAMPING_FACTOR = 0.2; // 80% confidence discount, not full suppression
+
 function parseArgs(argv) {
   const args = { _: [] };
   for (let i = 0; i < argv.length; i++) {
@@ -51,6 +64,42 @@ function fileExists(p) {
     return fs.statSync(p).isFile();
   } catch {
     return false;
+  }
+}
+
+function detectCentralizedAuthMiddleware(targetPath) {
+  for (const candidate of AUTH_MIDDLEWARE_CANDIDATES) {
+    const candidatePath = path.join(targetPath, candidate);
+    if (fileExists(candidatePath) && AUTH_KEYWORDS_RE.test(fs.readFileSync(candidatePath, "utf8"))) {
+      return candidatePath;
+    }
+  }
+  return null;
+}
+
+function dampenMiddlewareCoveredFindings(semgrepOutPath, targetPath) {
+  const middlewarePath = detectCentralizedAuthMiddleware(targetPath);
+  if (!middlewarePath) return;
+
+  const data = JSON.parse(fs.readFileSync(semgrepOutPath, "utf8"));
+  const relMiddlewarePath = path.relative(targetPath, middlewarePath);
+  let adjustedCount = 0;
+
+  for (const result of data.results || []) {
+    if (!result.check_id.endsWith(MISSING_AUTH_CHECK_RULE)) continue;
+    const originalWeight = Number(result.extra?.metadata?.weight ?? 4);
+    result.extra.metadata.weight = Math.round(originalWeight * MIDDLEWARE_DAMPING_FACTOR * 10) / 10;
+    result.extra.metadata.dampened_reason =
+      `Repo has centralized auth middleware at ${relMiddlewarePath} — this finding's confidence ` +
+      `is reduced 80% since auth may be enforced there instead of per-route. Verify manually.`;
+    adjustedCount++;
+  }
+
+  if (adjustedCount > 0) {
+    fs.writeFileSync(semgrepOutPath, JSON.stringify(data));
+    console.error(
+      `  ℹ Found centralized auth middleware (${relMiddlewarePath}) — dampened ${adjustedCount} auth-check finding(s)`
+    );
   }
 }
 
@@ -136,6 +185,7 @@ function main() {
 
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "aidebt-"));
   const semgrepOut = runSemgrep(targetPath, path.join(workDir, "semgrep.json"));
+  if (semgrepOut) dampenMiddlewareCoveredFindings(semgrepOut, targetPath);
   const gitmineOut = runGitMine(targetPath, path.join(workDir, "gitmine.json"));
   const jscpdOut = runJscpd(targetPath, path.join(workDir, "jscpd"));
   const gitleaksOut = runGitleaks(targetPath, path.join(workDir, "gitleaks.json"));
