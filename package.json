@@ -1,6 +1,6 @@
 {
   "name": "ai-debt-audit",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "description": "Scans a repo for AI-generated technical, cognitive, and intent debt. Deterministic, explainable, fully local — no code ever leaves your machine.",
   "keywords": [
     "ai",
@@ -22,6 +22,16 @@
   "homepage": "https://github.com/aniruddhavasudev/ai-debt-audit",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "scripts",
+    "rules",
+    "README.md",
+    "CONTRIBUTING.md"
+  ],
   "bin": {
     "aidebt-scan": "./bin/aidebt-scan.js"
   },
