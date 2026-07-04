@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI-Debt Report — next-supabase-saas-starter</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; padding: 40px; background: #f8fafc; color: #1e293b; line-height: 1.5;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  header { margin-bottom: 32px; }
+  header h1 { font-size: 22px; margin: 0 0 4px; color: #0f172a; }
+  header .meta { color: #64748b; font-size: 13px; }
+  .score-card {
+    display: flex; align-items: center; gap: 28px;
+    background: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 6px solid #ca8a04;
+  }
+  .score-circle {
+    width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    background: #ca8a041a; border: 4px solid #ca8a04;
+  }
+  .score-circle .num { font-size: 28px; font-weight: 700; color: #ca8a04; line-height: 1; }
+  .score-circle .max { font-size: 11px; color: #64748b; }
+  .score-text .tier { font-size: 20px; font-weight: 700; color: #ca8a04; margin: 0 0 4px; }
+  .score-text .sub { color: #64748b; font-size: 14px; }
+  .card {
+    background: white; border-radius: 12px; padding: 24px 28px; margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card h2 { font-size: 16px; margin: 0 0 16px; color: #0f172a; }
+  .cat-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .cat-label { width: 200px; font-size: 13px; color: #334155; }
+  .cat-weight { color: #94a3b8; font-size: 11px; }
+  .cat-bar-track { flex: 1; height: 10px; background: #e2e8f0; border-radius: 6px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 6px; }
+  .cat-score { width: 60px; text-align: right; font-size: 13px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  th { color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .badge { color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .path { color: #64748b; font-family: monospace; font-size: 12px; white-space: nowrap; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  .dampened { color: #ca8a04; font-size: 12px; margin-top: 4px; }
+  ul { margin: 0; padding-left: 20px; font-size: 13px; }
+  footer { color: #94a3b8; font-size: 12px; text-align: center; margin-top: 32px; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI-Debt Report</h1>
+      <div class="meta">next-supabase-saas-starter · generated 2026-07-04T15:47:47.323Z</div>
+    </header>
+
+    <div class="score-card">
+      <div class="score-circle"><div class="num">28</div><div class="max">/ 100</div></div>
+      <div class="score-text">
+        <div class="tier">Medium Risk</div>
+        <div class="sub">Blended from technical (50%), cognitive (25%), and intent (25%) debt signals</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Category Breakdown</h2>
+      
+    <div class="cat-row">
+      <div class="cat-label">Technical debt <span class="cat-weight">50%</span></div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:14%;background:#16a34a"></div></div>
+      <div class="cat-score" style="color:#16a34a">14/100</div>
+    </div>
+      
+    <div class="cat-row">
+      <div class="cat-label">Cognitive debt <span class="cat-weight">25%</span></div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:81%;background:#dc2626"></div></div>
+      <div class="cat-score" style="color:#dc2626">81/100</div>
+    </div>
+      
+    <div class="cat-row">
+      <div class="cat-label">Intent debt <span class="cat-weight">25%</span></div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:3%;background:#16a34a"></div></div>
+      <div class="cat-score" style="color:#16a34a">3/100</div>
+    </div>
+    </div>
+
+    <div class="card">
+      <h2>Technical Debt — 38 Semgrep findings</h2>
+      <ul><li><strong>framework_misuse</strong>: 3 findings (weighted 3)</li><li><strong>security</strong>: 3 findings (weighted 2.4)</li><li><strong>incomplete_implementation</strong>: 31 findings (weighted 31)</li><li><strong>error_handling</strong>: 1 findings (weighted 4)</li></ul>
+    </div>
+
+    <div class="card">
+      <h2>Top Findings</h2>
+      <table>
+        <thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Detail</th></tr></thead>
+        <tbody>
+      <tr>
+        <td><span class="badge" style="background:#ca8a04">WARNING</span></td>
+        <td><code>ai-debt-empty-catch-block-js</code></td>
+        <td class="path">utils/supabase/server.ts:18</td>
+        <td>Empty catch block. AI-generated code frequently wraps calls in try/catch to &quot;make the error go away&quot; without handling or surfacing the failure — a hallmark of unreviewed AI output.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-inline-object-prop-rerender</code></td>
+        <td class="path">app/(dashboard)/dashboard/layout.tsx:31</td>
+        <td>Inline object/array/arrow-function literal passed as a JSX prop, causing needless re-renders every render cycle. Common in AI-generated components that were never profiled or optimized.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-inline-object-prop-rerender</code></td>
+        <td class="path">app/(dashboard)/dashboard/layout.tsx:53</td>
+        <td>Inline object/array/arrow-function literal passed as a JSX prop, causing needless re-renders every render cycle. Common in AI-generated components that were never profiled or optimized.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">app/api/stripe/webhook/route.ts:30</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-inline-object-prop-rerender</code></td>
+        <td class="path">lib/auth/index.tsx:42</td>
+        <td>Inline object/array/arrow-function literal passed as a JSX prop, causing needless re-renders every render cycle. Common in AI-generated components that were never profiled or optimized.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">lib/db/migrate.ts:12</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">lib/db/seed.ts:7</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">lib/db/seed.ts:39</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">lib/db/seed.ts:58</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">lib/db/seed.ts:82</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr></tbody>
+      </table>
+    </div>
+
+    <div class="card"><h2>Python Security (Bandit) — 0 findings</h2>
+           <p>sub-score 0/100 — by severity: none</p>
+           <table><thead><tr><th>Severity</th><th>Test</th><th>Location</th><th>Detail</th></tr></thead><tbody>
+           
+           </tbody></table></div>
+
+    
+
+    <div class="card"><h2>Duplication (jscpd)</h2><p>3.1% duplicated lines (278/8886) across 35 clone pairs — sub-score 16/100</p></div>
+
+    <div class="card"><h2>Historical Secrets (gitleaks)</h2><p>None found — sub-score 0/100</p></div>
+
+    <div class="card">
+      <h2>Cognitive Debt (knowledge concentration)</h2>
+      <p>Bus-factor risk ratio (raw): 81.1% of tracked files have had only one author ever<br>
+      Total distinct authors: 15 (team-size damping factor: 1.00)</p>
+      
+    </div>
+
+    <div class="card">
+      <h2>Intent Debt (externalized rationale)</h2>
+      <p>Generic/uninformative commit messages: 3.3% of commits<br>
+      Refactor-commit ratio (trend indicator, not scored): 0.0%</p>
+    </div>
+
+    <footer>Methodology is a v1 heuristic pending calibration against real audited repos.</footer>
+  </div>
+</body>
+</html>

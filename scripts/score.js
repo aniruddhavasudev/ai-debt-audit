@@ -19,6 +19,7 @@
  */
 
 import fs from "node:fs";
+import path from "node:path";
 
 const WEIGHTS = {
   technical: 0.5,
@@ -103,6 +104,15 @@ function scoreTechnicalDebt(semgrepResults, totalFilesScanned) {
     byCategory[category].weight += weight;
     totalWeight += weight;
   }
+
+  // Dampened weights (e.g. 4 * 0.2 from the middleware auth-check fix) are
+  // not exactly representable in binary floating point, so summing several
+  // of them can produce noise like 2.4000000000000004. Round for display —
+  // this is purely cosmetic, the scoring math above already happened.
+  for (const stats of Object.values(byCategory)) {
+    stats.weight = Math.round(stats.weight * 100) / 100;
+  }
+  totalWeight = Math.round(totalWeight * 100) / 100;
 
   const filesForNormalization = Math.max(totalFilesScanned, 1);
   const weightedFindingsPerFile = totalWeight / filesForNormalization;
@@ -570,6 +580,17 @@ function main() {
   const tier = riskTier(composite);
   const top = topFindings(semgrepResults);
 
+  // Semgrep/Bandit/gitleaks all report file paths as whatever we passed
+  // them (an absolute path, since the CLI resolves the target before
+  // invoking any tool). Absolute paths leak local machine detail into a
+  // report that's meant to be a shareable artifact — relativize everything
+  // to the scanned repo's own root instead.
+  const repoRoot = gitMine.repoPath;
+  const toRelative = (p) => (p ? path.relative(repoRoot, p) || path.basename(p) : p);
+  for (const f of top) f.path = toRelative(f.path);
+  if (bandit) for (const f of bandit.top) f.file = toRelative(f.file);
+  if (historicalSecrets) for (const l of historicalSecrets.leaks) l.file = toRelative(l.file);
+
   const report = renderMarkdown({
     composite,
     tier,
@@ -581,7 +602,7 @@ function main() {
     cognitive,
     intent,
     top,
-    repoPath: gitMine.repoPath,
+    repoPath: path.basename(gitMine.repoPath),
   });
 
   if (args.out) {
@@ -603,7 +624,7 @@ function main() {
       cognitive,
       intent,
       top,
-      repoPath: gitMine.repoPath,
+      repoPath: path.basename(gitMine.repoPath),
     });
     fs.writeFileSync(args.html, html);
     console.error(`HTML report written to ${args.html}`);

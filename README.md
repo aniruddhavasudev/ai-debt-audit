@@ -4,6 +4,8 @@ A repo scanner for the specific mess that AI coding assistants leave behind: dis
 
 Point it at a repo, it runs six tools, you get one score and a full breakdown. Takes a few seconds.
 
+Real example: [`examples/sample-report.md`](examples/sample-report.md) — a scan of a real, public Next.js/Supabase SaaS starter, unedited. Nothing here is a mockup.
+
 ## Why this exists
 
 By some counts, roughly 10,000 startups shipped a production app built mostly by an AI assistant in the last year or so. More than 8,000 of them are now looking at a partial rebuild. That gap — between "it works" and "it's fine to build on" — is what this tries to measure before it becomes a $50k+ surprise.
