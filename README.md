@@ -1,10 +1,18 @@
 # ai-debt-audit
 
+**Measure comprehension debt in AI-generated code.**
+
 A repo scanner for the specific mess that AI coding assistants leave behind: disabled RLS policies, auth checks that only exist in the happy path, `debug=True` still on, secrets copy-pasted from a tutorial, and the quieter stuff — one person owning half the codebase, commits that just say "fix," nobody writing down why anything is the way it is.
 
-Point it at a repo, it runs six tools, you get one score and a full breakdown. Takes a few seconds.
+Point it at a repo, it runs six tools, you get one score and a full breakdown. Takes a few seconds. Fully local — nothing calls an LLM, nothing leaves your machine.
+
+![demo](assets/demo-terminal.svg)
 
 Real example: [`examples/sample-report.md`](examples/sample-report.md) — a scan of a real, public Next.js/Supabase SaaS starter, unedited. Nothing here is a mockup.
+
+![sample report](assets/sample-report.png)
+
+If you run this and it finds something real, a star helps other people find it too 👇
 
 ## Why this exists
 
