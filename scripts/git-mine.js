@@ -18,7 +18,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 
 const REFACTOR_RE = /\b(refactor|cleanup|clean up|simplify|restructure|reorgani[sz]e)\b/i;
-const GENERIC_MSG_RE = /^(fix|update|updates|wip|changes|misc|stuff|minor|typo|test|tmp|temp|asdf|x+|\.+)\b*$/i;
+const GENERIC_MSG_RE = /^(fix|update|updates|wip|changes|misc|stuff|minor|typo|test|tmp|temp|asdf|x+|\.+)$/i;
 
 function git(repoPath, args) {
   return execFileSync("git", ["-C", repoPath, ...args], {
