@@ -55,4 +55,6 @@ jobs:
           node bin/aidebt-scan.js test-fixtures/flask --out /tmp/ci-report.md --html /tmp/ci-report.html
           test -s /tmp/ci-report.md
           test -s /tmp/ci-report.html
-          echo "CLI produced non-empty reports successfully."
+          test -s /tmp/ci-report-csv/summary.csv
+          test -s /tmp/ci-report.pdf
+          echo "CLI produced non-empty Markdown, HTML, CSV, and PDF reports by default (no --csv/--pdf flags passed)."
