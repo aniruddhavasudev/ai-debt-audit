@@ -1,6 +1,6 @@
 {
   "name": "ai-debt-audit",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Finds hidden risks in AI-generated code — security gaps, shortcuts, and knowledge gaps only one person understands. 100% private, runs on your machine.",
   "keywords": [
     "ai",
@@ -32,7 +32,6 @@
     "scripts",
     "rules",
     "README.md",
-    "CONTRIBUTING.md",
     "LICENSE"
   ],
   "bin": {
