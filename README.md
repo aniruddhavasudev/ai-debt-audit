@@ -99,11 +99,12 @@ Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects.
 ✅ Historical secret scanning — catches credentials deleted from code but still in git history<br/>
 ✅ Bus-factor tracking — who's the only person that understands each file<br/>
 ✅ "Giant dump" commit detection — huge unreviewed changes landed in one shot<br/>
+✅ Dependency vulnerability checks that work on real repos — even JS projects that never commit a lockfile<br/>
 ✅ Markdown, HTML, CSV, and PDF reports by default — no flags needed<br/>
-✅ `--diff` mode — score just a PR, not the whole repo<br/>
-✅ `--history` — track whether a repo is improving or worsening over time<br/>
-✅ SARIF export + GitHub Action — findings in the Security tab, PR gating with `--fail-on-score`<br/>
-✅ `.aidebtrc.json` — per-repo weights, rule ignores, path exclusions<br/>
+✅ Scan only what a pull request changed, instead of re-scanning the whole repo<br/>
+✅ Track whether a repo is getting better or worse across scans over time<br/>
+✅ Block risky pull requests automatically — findings appear right in GitHub's Security tab<br/>
+✅ Tune it per repo — adjust category weights, silence specific checks, exclude folders<br/>
 ✅ Claude Code plugin — ask Claude to run a real scan from inside a conversation<br/>
 ✅ 100% local and private — nothing ever leaves your machine
 
