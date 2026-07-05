@@ -1,0 +1,13 @@
+{
+  "name": "ai-debt-audit",
+  "owner": {
+    "name": "aniruddhavasudev"
+  },
+  "plugins": [
+    {
+      "name": "ai-debt-audit",
+      "source": "./",
+      "description": "Finds hidden risks in AI-generated code — security gaps, shortcuts, and knowledge trapped in one person's head. 100% private, runs on your machine."
+    }
+  ]
+}
