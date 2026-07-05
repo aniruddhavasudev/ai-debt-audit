@@ -206,7 +206,7 @@ What each of the seven tools catches and how the score is composed.
 
 ## 📍 Where this stands
 
-Scoring weights are a v1 heuristic, not yet calibrated against a large repo sample — see [CALIBRATION.md](CALIBRATION.md) for real findings so far. If a finding looks wrong against your own repo, that's more useful to report than a star.
+Scoring weights are a v1 heuristic. A 12-repo pilot batch (real public repos, full git history, no cherry-picking) landed every scored repo in Low/Medium tier with no crashes at real-world scale — see [CALIBRATION_50_REPOS.md](CALIBRATION_50_REPOS.md) for the numbers, and [CALIBRATION.md](CALIBRATION.md) for earlier findings. This is a pilot toward a full 50-repo run, not a finished calibration yet. If a finding looks wrong against your own repo, that's more useful to report than a star.
 
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:ff6b6b,50:9b59b6,100:1e90ff&height=100&section=footer" width="100%" alt="footer"/>
