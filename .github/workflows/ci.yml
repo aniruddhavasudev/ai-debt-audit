@@ -39,6 +39,9 @@ jobs:
       - name: Run rule regression tests against test-fixtures/
         run: node scripts/test-rules.js
 
+      - name: Run scoring engine unit tests
+        run: node --test scripts/score.test.js
+
       - name: Smoke-test the full CLI end to end
         run: |
           node bin/aidebt-scan.js test-fixtures/flask --out /tmp/ci-report.md --html /tmp/ci-report.html

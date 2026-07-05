@@ -19,9 +19,12 @@ npm link
 Before opening a PR, run the same checks CI runs:
 ```bash
 semgrep --validate --config rules/       # rule syntax
-node scripts/test-rules.js               # rule regression tests
+node scripts/test-rules.js               # rule regression tests (do the Semgrep rules actually fire?)
+node --test scripts/score.test.js        # scoring engine unit tests (is the math right?)
 node bin/aidebt-scan.js test-fixtures/flask --out /tmp/report.md   # full pipeline smoke test
 ```
+
+The unit tests earn their keep: they caught a real bug during development where a single Bandit HIGH and MEDIUM finding scored identically (both saturated to 100 with only 1 file scanned) because the saturation constant was miscalibrated for small scans — exactly the common case in `--diff` mode.
 
 ## Adding a Semgrep rule
 
