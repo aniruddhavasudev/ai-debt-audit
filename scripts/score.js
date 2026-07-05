@@ -75,7 +75,12 @@ function main() {
   // repo's own self-scan config, not by the unit tests, which used
   // relative paths in their fixtures and never exercised this mismatch.
   const repoRoot = gitMine.repoPath;
-  const toRelative = (p) => (p ? path.relative(repoRoot, p) || path.basename(p) : p);
+  // Only absolute paths get relativized. Semgrep/Bandit report absolute
+  // paths, but gitleaks reports repo-relative ones already — running
+  // path.relative() on those resolved them against the CWD instead, so a
+  // scan launched from outside the target repo displayed leak paths like
+  // "../../root/target/config.py". Found while capturing README output.
+  const toRelative = (p) => (p && path.isAbsolute(p) ? path.relative(repoRoot, p) || path.basename(p) : p);
 
   // Config is loaded (and findings filtered by it) before any scoring
   // happens — ignoreRules/excludePaths need to remove findings from the

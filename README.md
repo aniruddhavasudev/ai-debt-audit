@@ -1,148 +1,169 @@
-<div align="center">
+# ai-debt-audit
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e90ff,50:9b59b6,100:ff6b6b&height=180&section=header&text=ai-debt-audit&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Find%20what%20your%20AI%20assistant%20left%20behind&descAlignY=58&descSize=18" width="100%" alt="ai-debt-audit banner"/>
+[![CI](https://img.shields.io/github/actions/workflow/status/aniruddhavasudev/ai-debt-audit/ci.yml?label=CI)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/ai-debt-audit)](https://www.npmjs.com/package/ai-debt-audit)
+[![license](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![self-scan](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json)](examples/sample-report.md)
 
-<img src="assets/logo.svg" width="90" height="90" alt="ai-debt-audit logo">
+AI assistants ship code fast; the debt ships faster — security shortcuts, secrets buried in git history, files only one person has ever touched, commits that never say why. `ai-debt-audit` scans a repo and turns that into one 0–100 score with every finding traced to a file and line. Fully local, no LLM in the loop, deterministic.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/aniruddhavasudev/ai-debt-audit/ci.yml?label=CI&logo=githubactions&logoColor=white&color=2ea44f&style=for-the-badge)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
-[![AI-Debt Score](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json&style=for-the-badge)](examples/sample-report.md)
+## What a scan looks like
 
-*The "AI-Debt Score" badge is this repo scanning itself, on a schedule — a live number, not a claim.*
+Real output, scanning a deliberately vibe-coded fixture repo:
 
-</div>
+```
+$ aidebt-scan .
 
-<br>
+→ Semgrep (technical debt)...            ✓ (4.6s)
+→ git-mine (cognitive + intent debt)...  ✓ (47ms)
+→ jscpd (duplication)...                 ✓ (36ms)
+→ gitleaks (historical secrets)...       ✓ (80ms)
+→ bandit (Python security)...            ✓ (156ms)
+→ pip-audit (dependency vulns)...        ✗ skipped — no requirements.txt
+→ npm audit (dependency vulns)...        ✗ skipped — no package.json
+→ Scoring...                             ✓
 
-Copilot, Cursor, and Claude write code fast — and quietly leave things behind: security shortcuts, secrets in git history, code nobody on the team actually understands, commits that never say *why*.
-
-**ai-debt-audit scans any codebase and scores that leftover risk 0–100** — in seconds, on your machine, with every finding traced to an exact file and line.
-
-![demo](assets/demo-terminal.svg)
-
-> [!IMPORTANT]
-> **100% private.** Your code never leaves your machine, and no AI is used to judge it. Every result points to an exact line in your code, so you can see for yourself — not just trust a black box.
-
-<br>
-
-## 🚀 Quick start
-
-If you have Node.js, you already have everything you need:
-
-```bash
-npx ai-debt-audit /path/to/any/repo
+────────────────────────────────────────────────────────
+  AI-DEBT REPORT
+────────────────────────────────────────────────────────
+  Composite Score: 52/100   [High Risk]
+────────────────────────────────────────────────────────
+  Technical debt   ███████░░░░░░░░░░░░░░░░░   31/100  (50%)
+  Cognitive debt   ████████████████████████  100/100  (25%)
+  Intent debt      ███████████░░░░░░░░░░░░░   44/100  (25%)
+────────────────────────────────────────────────────────
 ```
 
-That's a real scored scan with zero setup — git-history analysis (knowledge risk, missing context, AI-assisted commits), code duplication, and dependency vulnerabilities all work out of the box. The report tells you exactly which optional checks were skipped.
+And a few of the findings behind those numbers, verbatim from the Markdown report the scan writes:
 
-**For the full scan** (74 AI-debt pattern rules, Python security, secrets in git history), add the scanning tools when you're ready:
-
-```bash
-pip3 install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
+```
+- [ERROR]   ai-debt-insecure-pickle-loads — smelly.py:7 — pickle.loads() on data that may
+            originate outside the process ... a direct remote-code-execution primitive
+- [WARNING] ai-debt-empty-catch-block-js — smelly.js:2 — Empty catch block. AI-generated code
+            frequently wraps calls in try/catch to "make the error go away"
+- aws-access-token in config.py:1 (commit e9c688b3)   ← deleted from the code, still in history
+- 1 AI-assisted commit that is *also* generic/uninformative ("update", Co-Authored-By: Claude)
 ```
 
-No accounts, no config, no code sent anywhere. Every scan writes four report formats by default — Markdown, HTML, PDF, and a plain-language CSV workbook.
+## Install and first scan
 
-**Real example:** a full, unedited scan of a real public Next.js/Supabase SaaS starter — [`examples/sample-report.md`](examples/sample-report.md).
+```bash
+npx ai-debt-audit /path/to/repo
+```
 
-<br>
+That's a complete scored scan with nothing installed beyond Node — git-history analysis, duplication, and dependency checks all run; the report states exactly which optional checks were skipped. For the full ruleset (74 AI-debt Semgrep patterns, Python security, secrets in git history):
 
-## 📊 What the score means
+```bash
+pip3 install semgrep bandit pip-audit   # + gitleaks: github.com/gitleaks/gitleaks#installing
+```
 
-<div align="center">
-<table>
-<tr>
-<td width="33%" valign="top" align="center">
+Every scan writes Markdown, HTML, PDF, and a CSV workbook by default. Add `--json scores.json` for machine-readable output. Full flag reference: [docs/USAGE.md](docs/USAGE.md).
 
-### 🔴 Security & quality
-**50% of the score**
+## The detectors
 
-Security holes, copy-pasted code, and unfinished work left in place.
+**1. AI-pattern static analysis** — 74 custom Semgrep rules plus Bandit, targeting the specific shortcuts LLMs take: `subprocess.call(cmd, shell=True)` because it's the path of least resistance, `except: pass` to make an error disappear, `pickle.loads()` on request data, Flask `debug=True` left on, Supabase RLS disabled, `eval()` in glue code. These aren't generic lint rules — each one encodes a failure mode observed in AI-generated code, and each fires with a file:line and an explanation of why it matters.
 
-</td>
-<td width="33%" valign="top" align="center">
+```python
+def run(cmd, payload):
+    subprocess.call(cmd, shell=True)   # ← ai-debt-subprocess-shell-true: shell injection
+    return pickle.loads(payload)       # ← ai-debt-insecure-pickle-loads: RCE primitive
+```
 
-### 🟣 Knowledge risk
-**25% of the score**
+**2. Git-history mining** — reads `git log` directly, no external tool. Bus factor: which files has only one person ever touched (with team-size damping, so a solo repo isn't penalized for being solo). Giant-dump commits: 15+ files or 500+ churned lines landed in one shot — the "wasn't reviewed incrementally" pattern. AI-assisted commits: measured from real `Co-Authored-By` trailers (Claude Code, Copilot, Cursor), not inferred from style. A disclosed AI commit with a real message costs nothing; an AI commit whose message is `update` is exactly the unreviewed-dump pattern and scores accordingly.
 
-What happens if the one person who understands this code leaves.
+```
+commit 3f2a1c9   Carol Dev
+    update                                          ← generic message
+    Co-Authored-By: Claude <noreply@anthropic.com>  ← AI-assisted + unexplained: compounds
+```
 
-</td>
-<td width="33%" valign="top" align="center">
+**3. Historical secret scanning** — gitleaks over the full commit history, not the current snapshot. A credential committed once and deleted the next day is still recoverable by anyone who clones the repo; snapshot-only scanners never see it. In the sample above the AWS key lives only in commit `e9c688b3` — the working tree is clean.
 
-### 🟢 Missing context
-**25% of the score**
+```python
+# committed in Jan, deleted in Feb, findable forever:
+AWS_SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCyEXAMPLEKEY"
+```
 
-Whether anyone ever wrote down *why* the code works the way it does.
+**4. Duplication and dependency risk** — jscpd for copy-paste mass (AI assistants regenerate similar blocks instead of extracting shared code), plus `npm audit` and `pip-audit` for known-vulnerable dependencies. The npm check works on repos that never committed a lockfile — most JS libraries — by deriving one from `package.json` in a temp directory with `--ignore-scripts`, so scanning an untrusted repo never executes its install hooks.
 
-</td>
-</tr>
-</table>
+Scoring: technical debt (the blend of the above) is 50% of the composite; knowledge concentration is 25%; commit-message intent is 25%. A tool that didn't run has its weight redistributed — never averaged in as a phantom zero. Every constant is a documented v1 heuristic; the score is calibrated against [50 real open-source repos](CALIBRATION_50_REPOS.md) (50/50 scanned, zero failures, all scores landing 2–43 where mature OSS should).
 
-**Risk tiers — same 0-100 scale every time:** 0–25 Low · 26–50 Medium · 51–75 High · 76–100 Critical
+## CI/CD
 
-</div>
+Fail a PR when the score crosses a threshold. The exit code is the contract: non-zero when `composite >= N`.
 
-Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects. **Full list of every check: [docs/WHAT_IT_CATCHES.md](docs/WHAT_IT_CATCHES.md)**
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0        # required — a shallow clone silently distorts history-based scores
 
-<br>
+- uses: aniruddhavasudev/ai-debt-audit@main
+  with:
+    path: .
+    fail-on-score: '50'   # block the PR at Medium/High boundary
+    diff: ${{ github.event.pull_request.base.sha }}   # scan only what this PR changed
+```
 
-## ✨ Features
+The action also uploads findings as SARIF to GitHub's Security tab and attaches the full report as a workflow artifact. From a plain shell: `aidebt-scan . --fail-on-score 50`.
 
-**Scanning**<br/>
-✅ One composite 0-100 score — technical + cognitive + intent debt, always comparable<br/>
-✅ 74 custom Semgrep rules for AI-specific failure patterns across 5 languages<br/>
-✅ AI-assisted commit detection — real Co-Authored-By trailers, measured not inferred<br/>
-✅ Historical secret scanning — catches credentials deleted from code but still in git history<br/>
-✅ Bus-factor tracking and "giant dump" commit detection from real git history<br/>
-✅ Dependency vulnerability checks that work on real repos — even JS projects that never commit a lockfile
-
-**Reports**<br/>
-✅ Markdown, HTML, CSV, and PDF reports by default — no flags needed<br/>
-✅ Every finding traces to an exact file and line — evidence, not a vibe check<br/>
-✅ Track whether a repo is getting better or worse across scans over time
-
-**CI/CD**<br/>
-✅ Scan only what a pull request changed, instead of re-scanning the whole repo<br/>
-✅ Block risky pull requests automatically — findings appear right in GitHub's Security tab<br/>
-✅ Tune it per repo — adjust category weights, silence specific checks, exclude folders
-
-**Privacy & integrations**<br/>
-✅ 100% local and private — nothing ever leaves your machine, works with whatever tools you have installed<br/>
-✅ Claude Code plugin — ask Claude to run a real scan from inside a conversation
-
-**→ Full detail: [docs/WHAT_IT_CATCHES.md](docs/WHAT_IT_CATCHES.md) · [docs/TOOLS.md](docs/TOOLS.md) · [docs/USAGE.md](docs/USAGE.md)**
-
-<br>
-
-## 🔌 Use it as a Claude Code plugin
-
-If you use [Claude Code](https://claude.com/claude-code), you don't need to run the CLI by hand — install this repo as a plugin and just ask Claude to audit your code. It runs a real scan (not a description of one) and reads the results back to you.
+## Claude Code plugin
 
 ```
 /plugin marketplace add aniruddhavasudev/ai-debt-audit
 /plugin install ai-debt-audit@ai-debt-audit
 ```
 
-Then just ask, in plain language:
+Then ask in plain language — "audit this repo for AI-generated debt" — and Claude runs the actual scanner and walks you through the findings. Setup details: [docs/USAGE.md](docs/USAGE.md#using-it-as-a-claude-code-plugin).
 
-> "Audit this repo for AI-generated debt"
-> "Check for risks Copilot/Cursor may have left behind"
-> "Give me a due-diligence debt score before we hand this off"
+## JSON output
 
-**→ Full plugin setup and verification steps: [docs/USAGE.md](docs/USAGE.md#using-it-as-a-claude-code-plugin)**
+`--json scores.json` emits a stable schema for tooling (same keys and types every run; a tool that didn't run is `null`, never a fabricated zero — the distinction matters if you aggregate):
 
-<br>
+```jsonc
+{
+  "composite": 52,                  // 0-100, higher = more debt
+  "tier": "High",                   // Low | Medium | High | Critical
+  "technical": { "score": 31, "blendedScore": 31, "byCategory": {...}, "totalFindings": 9 },
+  "duplication":       { "score": 12, "percentage": 2.4, "clonePairs": [...] },   // or null
+  "historicalSecrets": { "score": 25, "leakCount": 1, "leaks": [...] },           // or null
+  "bandit":            { "score": 18, "totalFindings": 4, "top": [...] },         // or null
+  "dependencyVulns":   null,        // null = didn't apply (no manifests found)
+  "cognitive": { "score": 100, "busFactorRiskRatio": 1, "totalAuthors": 3,
+                 "riskyFiles": [...], "giantDumpCommits": 1, "giantDumpCommitList": [...] },
+  "intent":    { "score": 44, "genericCommits": [...], "aiAssistedCommits": 1,
+                 "aiToolCounts": { "Claude Code": 1 }, "aiAssistedGenericCommits": 1 },
+  "weights":   { "technical": 0.5, "cognitive": 0.25, "intent": 0.25 }
+}
+```
 
-## 📜 License
+The schema is enforced by tests; breaking changes to it are treated as breaking releases.
 
-Free to use, modify, and self-host — including commercially. The only rule: if you offer a modified version as a hosted service, you have to share your changes back too. Full details: [LICENSE](LICENSE) (AGPL-3.0).
+## Limitations
 
-## 📍 Where this stands
+Honest list — these are measured, not hypothetical:
 
-This is a new tool and still being fine-tuned. It's been calibrated against 50 real, popular open-source projects — every scan completed, every score landed where a sane scorer should put it; see [CALIBRATION_50_REPOS.md](CALIBRATION_50_REPOS.md) for the full table. And yes: this tool is itself built AI-assisted and human-verified — which is exactly the workflow it exists to keep honest. The commit history discloses it, the same way the tool rewards disclosure in yours.
+- **The score is a v1 heuristic.** Weights and saturation constants are documented starting points, calibrated for sanity (stable, bounded, reproducible) against 50 real repos — not derived from labeled outcome data. Treat it as a triage signal, not a verdict.
+- **It cannot tell you whether code was AI-written.** Trailer detection measures *disclosed* AI assistance only; undisclosed AI code is indistinguishable from human code, and the tool doesn't pretend otherwise.
+- **Historical-secret findings on open-source repos are noisy.** In the 50-repo calibration, 29 repos had gitleaks hits — overwhelmingly test fixtures and example keys. On a private codebase the signal is much stronger. Findings are capped in the score and always need human review.
+- **Python dependency scanning requires `requirements.txt`.** `pyproject.toml`-only projects are skipped, because resolving those dependencies means building the project, which executes its code — a line this scanner doesn't cross.
+- **Known false positive:** the Flask CORS rule matches its own pattern text inside Semgrep rule YAML files, so repos that *contain* Semgrep rules get a spurious hit.
+- **History-based scores need history.** A shallow clone (`fetch-depth: 1`, the GitHub Actions default) distorts cognitive/intent scores badly — measured at 86/100 shallow vs 37/100 full on the same repo. The scanner detects this and warns, but can't fix your checkout.
+- **Linux/macOS only.** Tool discovery uses `which`; native Windows isn't supported (WSL works).
 
-If a result looks wrong on your own repo, telling us is more useful than a star.
+## Roadmap
 
-<div align="center">
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:ff6b6b,50:9b59b6,100:1e90ff&height=100&section=footer" width="100%" alt="footer"/>
-</div>
+- **npm publish** so `npx ai-debt-audit` resolves without a clone (package is ready; name is reserved-free)
+- **GitHub Action marketplace listing** — the action exists and works from a ref; marketplace packaging is next
+- **More detectors**: Rust and C# rule packs, lockfile-less Python dependency resolution via PyPI metadata, PR-comment output mode
+- **Hosted dashboard** for tracking scores across an org's repos over time (the CLI stays free and local; AGPL protects exactly this boundary)
+
+## Recording a demo
+
+Two options, both scanning the same reproducible fixture (`node scripts/make-demo-repo.mjs /tmp/demo-app`):
+
+- **vhs** (GIF): `vhs assets/demo.tape` → `assets/demo.gif`
+- **asciinema**: a real recorded cast is at `assets/demo.cast` — play with `asciinema play assets/demo.cast`, or convert to GIF with [agg](https://github.com/asciinema/agg): `agg assets/demo.cast assets/demo.gif`
+
+## License
+
+AGPL-3.0. Free to use, modify, and self-host, commercially included; offering a modified version as a hosted service requires sharing changes back. See [LICENSE](LICENSE).
