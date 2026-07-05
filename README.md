@@ -93,19 +93,21 @@ Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects.
 
 ## ✨ Features
 
-- **One composite 0-100 score**, blended from technical, cognitive, and intent debt — same scale every time, so two repos (or the same repo over time) are directly comparable
-- **74 custom Semgrep rules** for AI-specific failure patterns (disabled RLS, SSTI, mass assignment, missing auth checks, stub code left in main) across Python, Ruby, JavaScript/TypeScript, Go, and Java, layered on top of Bandit, pip-audit, npm audit, jscpd, and gitleaks
-- **Measured AI-assisted commit detection** — reads real Co-Authored-By trailers (Claude Code, GitHub Copilot, Cursor) directly from git history to report what fraction of commits were AI-assisted, instead of only inferring AI involvement from code patterns
-- **Historical secret scanning** via gitleaks — catches a credential committed and later deleted, which a snapshot-only scanner never sees
-- **Bus-factor / knowledge-concentration tracking** from real git history, with bot commits excluded and a team-size damping factor so small teams aren't penalized for being small
-- **"Giant dump" commit detection** — flags commits that touched many files or churned hundreds of lines in one shot (measured from `git log --numstat`), the "wasn't reviewed incrementally" pattern, regardless of team size
-- **Four report formats by default, no flags needed** — Markdown, standalone HTML, a plain-language CSV workbook, and a client-deliverable PDF
-- **`--diff <ref>` mode** — scores only what changed vs. a base branch/commit, answering "did this PR add debt" instead of re-scanning everything
-- **`--history` tracking** — appends each scan to a local JSON log and shows the trend (improving/worsening) between runs
-- **SARIF export + a GitHub Action** — upload findings straight to GitHub's Security tab and gate PRs with `--fail-on-score`
-- **`.aidebtrc.json` config** — override category weights, ignore specific rules, or exclude paths per target repo
-- **A Claude Code plugin** — ask Claude to run a real scan (not describe one) from inside a conversation
-- **100% local** — every tool runs on your machine; no code or findings are ever sent to an LLM or third-party service
+✅ One composite 0-100 score — technical + cognitive + intent debt, always comparable<br/>
+✅ 74 custom Semgrep rules for AI-specific failure patterns across 5 languages<br/>
+✅ AI-assisted commit detection — real Co-Authored-By trailers, measured not inferred<br/>
+✅ Historical secret scanning — catches credentials deleted from code but still in git history<br/>
+✅ Bus-factor tracking — who's the only person that understands each file<br/>
+✅ "Giant dump" commit detection — huge unreviewed changes landed in one shot<br/>
+✅ Markdown, HTML, CSV, and PDF reports by default — no flags needed<br/>
+✅ `--diff` mode — score just a PR, not the whole repo<br/>
+✅ `--history` — track whether a repo is improving or worsening over time<br/>
+✅ SARIF export + GitHub Action — findings in the Security tab, PR gating with `--fail-on-score`<br/>
+✅ `.aidebtrc.json` — per-repo weights, rule ignores, path exclusions<br/>
+✅ Claude Code plugin — ask Claude to run a real scan from inside a conversation<br/>
+✅ 100% local and private — nothing ever leaves your machine
+
+**→ Full detail on every feature: [docs/WHAT_IT_CATCHES.md](docs/WHAT_IT_CATCHES.md) · [docs/TOOLS.md](docs/TOOLS.md) · [docs/USAGE.md](docs/USAGE.md)**
 
 <br>
 
