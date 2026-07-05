@@ -9,21 +9,19 @@
 [![License](https://img.shields.io/badge/License-AGPL%20v3-1e90ff?style=for-the-badge)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/aniruddhavasudev/ai-debt-audit?style=for-the-badge&color=f1c40f)](https://github.com/aniruddhavasudev/ai-debt-audit/stargazers)
 
-![Rules](https://img.shields.io/badge/semgrep_rules-74-ff6b6b?logo=semgrep&logoColor=white)
-![Tools](https://img.shields.io/badge/tools_orchestrated-7-9b59b6)
-![Languages](https://img.shields.io/badge/languages-6-16a085)
-![Node](https://img.shields.io/badge/node-%3E%3D18-3c873a?logo=nodedotjs&logoColor=white)
-![LLM calls](https://img.shields.io/badge/LLM_calls-0-e74c3c)
-![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4)
+![Rules](https://img.shields.io/badge/semgrep_rules-74-ff6b6b?style=for-the-badge&logo=semgrep&logoColor=white)
+![Tools](https://img.shields.io/badge/tools_orchestrated-7-9b59b6?style=for-the-badge)
+![Languages](https://img.shields.io/badge/languages-6-16a085?style=for-the-badge)
+![LLM calls](https://img.shields.io/badge/LLM_calls-0-e74c3c?style=for-the-badge)
 
 *The "AI-Debt Score" badge is this repo scanning itself, on a schedule — a live number, not a claim.*
 
 <p>
 <a href="#-quick-start"><img src="https://img.shields.io/badge/-Quick_Start-1e90ff?style=for-the-badge" /></a>
-<a href="#-what-it-catches"><img src="https://img.shields.io/badge/-What_It_Catches-9b59b6?style=for-the-badge" /></a>
+<a href="#-what-it-catches"><img src="https://img.shields.io/badge/-What_It_Catches-2ea44f?style=for-the-badge" /></a>
 <a href="docs/TOOLS.md"><img src="https://img.shields.io/badge/-The_7_Tools-16a085?style=for-the-badge" /></a>
 <a href="docs/USAGE.md"><img src="https://img.shields.io/badge/-Full_Usage-ff6b6b?style=for-the-badge" /></a>
-<a href="CALIBRATION.md"><img src="https://img.shields.io/badge/-Calibration-f1c40f?style=for-the-badge" /></a>
+<a href="CALIBRATION_50_REPOS.md"><img src="https://img.shields.io/badge/-Calibration-f1c40f?style=for-the-badge" /></a>
 </p>
 
 </div>
@@ -45,7 +43,7 @@ Point it at a repo, it runs seven deterministic tools, you get one score and a f
 <td width="33%" valign="top" align="center">
 
 ### 🔴 Technical debt
-![50%](https://img.shields.io/badge/weight-50%25-ff6b6b?style=flat-square)
+![50%](https://img.shields.io/badge/weight-50%25-ff6b6b?style=for-the-badge)
 
 Security holes, duplicated logic, unfinished stubs — 74 custom Semgrep rules + Bandit, pip-audit, npm audit, jscpd.
 
@@ -53,7 +51,7 @@ Security holes, duplicated logic, unfinished stubs — 74 custom Semgrep rules +
 <td width="33%" valign="top" align="center">
 
 ### 🟣 Cognitive debt
-![25%](https://img.shields.io/badge/weight-25%25-9b59b6?style=flat-square)
+![25%](https://img.shields.io/badge/weight-25%25-9b59b6?style=for-the-badge)
 
 Knowledge concentration — what happens if the one person who understands this leaves. Measured from real git history.
 
@@ -61,7 +59,7 @@ Knowledge concentration — what happens if the one person who understands this 
 <td width="33%" valign="top" align="center">
 
 ### 🟢 Intent debt
-![25%](https://img.shields.io/badge/weight-25%25-16a085?style=flat-square)
+![25%](https://img.shields.io/badge/weight-25%25-16a085?style=for-the-badge)
 
 Whether anyone wrote down *why*. Proxied from commit quality and refactor cadence.
 
@@ -78,36 +76,11 @@ Whether anyone wrote down *why*. Proxied from commit quality and refactor cadenc
 
 </div>
 
-```mermaid
-flowchart LR
-    R[("📁 Your repo")] --> S{{"7 local tools"}}
-    S --> T["🔴 Technical<br/>50%"]
-    S --> C["🟣 Cognitive<br/>25%"]
-    S --> I["🟢 Intent<br/>25%"]
-    T --> X(["🎯 Composite<br/>AI-Debt Score"])
-    C --> X
-    I --> X
-
-    classDef repo fill:#1e90ff,stroke:#0b5ed7,color:#fff,stroke-width:2px
-    classDef tools fill:#2c3e50,stroke:#1b2631,color:#fff,stroke-width:2px
-    classDef tech fill:#ff6b6b,stroke:#c0392b,color:#fff,stroke-width:2px
-    classDef cog fill:#9b59b6,stroke:#6c3483,color:#fff,stroke-width:2px
-    classDef intent fill:#16a085,stroke:#0e6655,color:#fff,stroke-width:2px
-    classDef score fill:#f1c40f,stroke:#b7950b,color:#000,stroke-width:3px
-
-    class R repo
-    class S tools
-    class T tech
-    class C cog
-    class I intent
-    class X score
-```
+<br>
 
 ![demo](assets/demo-terminal.svg)
 
-**Real example:** [`examples/sample-report.md`](examples/sample-report.md) — a scan of a real, public Next.js/Supabase SaaS starter, unedited.
-
-![sample report](assets/sample-report.png)
+**Real example:** a full, unedited scan of a real public Next.js/Supabase SaaS starter — [`examples/sample-report.md`](examples/sample-report.md).
 
 If you run this and it finds something real, a star helps other people find it too 👇
 
@@ -115,40 +88,52 @@ If you run this and it finds something real, a star helps other people find it t
 
 ## ✅ What it catches
 
-<table>
-<tr><td valign="top" width="50%">
+<div align="center">
 
-**🔴 Security (technical debt)**
-- [x] Disabled Supabase Row-Level Security
-- [x] SSTI via Flask `render_template_string`
-- [x] Django `DEBUG=True` left on in production
-- [x] Rails mass-assignment via `params.permit!`
-- [x] Spring `.csrf().disable()` / `permitAll()`
-- [x] SQL & command injection (Java, Go, Python)
-- [x] XXE, insecure deserialization, trust-all TLS
-- [x] Hardcoded secrets — current tree *and* git history
-- [x] Dependency CVEs (pip-audit, npm audit)
+![Security](https://img.shields.io/badge/🔴_SECURITY-technical_debt-ff6b6b?style=for-the-badge)
 
-</td><td valign="top" width="50%">
+</div>
 
-**🟣🟢 Process signals (cognitive + intent debt)**
-- [x] Bus factor from real `git log` history
-- [x] Bot commits excluded from team-size math
-- [x] Team-size damping — fair to solo projects
-- [x] Commit message quality, not just "fix"
-- [x] Refactor cadence vs. pure feature velocity
-- [x] Copy-paste duplication (jscpd)
-- [x] Shallow-clone detection with a live warning
+- ✅ Disabled Supabase Row-Level Security
+- ✅ SSTI via Flask `render_template_string`
+- ✅ Django `DEBUG=True` left on in production
+- ✅ Rails mass-assignment via `params.permit!`
+- ✅ Spring `.csrf().disable()` / `permitAll()`
+- ✅ CORS wildcard origins (Flask-CORS, Spring `@CrossOrigin`)
+- ✅ SQL & command injection (Java, Go, Python)
+- ✅ Path traversal via unsanitized file paths
+- ✅ XXE, insecure deserialization, trust-all TLS
+- ✅ Weak randomness for tokens/secrets
+- ✅ Silently swallowed errors (Go's `if err != nil {}`)
+- ✅ Stub code (`NotImplementedError`) left in main
+- ✅ Hardcoded secrets — current tree *and* full git history
+- ✅ Dependency CVEs (pip-audit, npm audit)
+- ✅ Copy-paste duplication (jscpd)
 
-</td></tr>
-</table>
+<div align="center">
 
-**Supported stacks:**
-![Python](https://img.shields.io/badge/Python-Flask%20%7C%20Django-3776ab?logo=python&logoColor=white)
-![Ruby](https://img.shields.io/badge/Ruby-Rails-cc0000?logo=rubyonrails&logoColor=white)
-![JS/TS](https://img.shields.io/badge/JS%2FTS-Next.js%20%7C%20Express-f7df1e?logo=javascript&logoColor=black)
-![Go](https://img.shields.io/badge/Go-00add8?logo=go&logoColor=white)
-![Java](https://img.shields.io/badge/Java-Spring%20Boot-6db33f?logo=spring&logoColor=white)
+![Process](https://img.shields.io/badge/🟣🟢_PROCESS-cognitive_%2B_intent_debt-9b59b6?style=for-the-badge)
+
+</div>
+
+- ✅ Bus factor / knowledge concentration from real `git log` history
+- ✅ Bot commits excluded from team-size math
+- ✅ Team-size damping — fair to solo projects
+- ✅ Commit message quality, not just "fix"
+- ✅ Refactor cadence vs. pure feature velocity
+- ✅ Shallow-clone detection with a live warning
+
+<div align="center">
+
+![Stacks](https://img.shields.io/badge/📦_SUPPORTED-stacks-16a085?style=for-the-badge)
+
+</div>
+
+![Python](https://img.shields.io/badge/Python-Flask%20%7C%20Django-3776ab?style=for-the-badge&logo=python&logoColor=white)
+![Ruby](https://img.shields.io/badge/Ruby-Rails-cc0000?style=for-the-badge&logo=rubyonrails&logoColor=white)
+![JS/TS](https://img.shields.io/badge/JS%2FTS-Next.js%20%7C%20Express-f7df1e?style=for-the-badge&logo=javascript&logoColor=black)
+![Go](https://img.shields.io/badge/Go-00add8?style=for-the-badge&logo=go&logoColor=white)
+![Java](https://img.shields.io/badge/Java-Spring%20Boot-6db33f?style=for-the-badge&logo=spring&logoColor=white)
 
 <br>
 
@@ -181,22 +166,26 @@ aidebt-scan /path/to/any/repo
 ```
 A real run, not a mockup — Markdown + styled standalone HTML, every time.
 
+<div align="center">
 <table>
 <tr>
-<td width="50%">
+<td width="50%" align="center">
 
-**📖 [docs/USAGE.md](docs/USAGE.md)**
+![Usage](https://img.shields.io/badge/📖_docs/USAGE.md-1e90ff?style=for-the-badge)
+
 Full flag reference, `.aidebtrc.json` config, GitHub Action setup, Claude Code skill install.
 
 </td>
-<td width="50%">
+<td width="50%" align="center">
 
-**🧰 [docs/TOOLS.md](docs/TOOLS.md)**
+![Tools](https://img.shields.io/badge/🧰_docs/TOOLS.md-9b59b6?style=for-the-badge)
+
 What each of the seven tools catches and how the score is composed.
 
 </td>
 </tr>
 </table>
+</div>
 
 <br>
 
