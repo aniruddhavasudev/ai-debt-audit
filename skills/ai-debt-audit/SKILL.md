@@ -21,7 +21,7 @@ Do not trigger for generic code review requests unrelated to AI-generated-code r
 
 Check these are installed before running; if missing, tell the user how to install rather than silently failing:
 ```bash
-pip install semgrep bandit pip-audit   # gitleaks: https://github.com/gitleaks/gitleaks#installing
+pip3 install semgrep bandit pip-audit   # gitleaks: https://github.com/gitleaks/gitleaks#installing
 ```
 Node.js is also required (the CLI itself is a Node script).
 
