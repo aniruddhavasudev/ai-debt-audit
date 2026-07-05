@@ -1,0 +1,139 @@
+{
+  "composite": 30,
+  "tier": "Medium",
+  "technical": {
+    "score": 1,
+    "byCategory": {
+      "error_handling": {
+        "count": 6,
+        "weight": 18
+      },
+      "incomplete_implementation": {
+        "count": 4,
+        "weight": 10
+      },
+      "uncategorized": {
+        "count": 6,
+        "weight": 6
+      }
+    },
+    "totalFindings": 16,
+    "totalWeight": 34,
+    "blendedScore": 41
+  },
+  "duplication": {
+    "score": 80,
+    "percentage": 15.970837842456001,
+    "duplicatedLines": 14020,
+    "totalLines": 87785,
+    "clones": 484
+  },
+  "historicalSecrets": {
+    "score": 100,
+    "leakCount": 6,
+    "leaks": [
+      {
+        "rule": "stripe-access-token",
+        "file": "../../../../../../../../root/ai-debt-audit/docs/topics/funding.md",
+        "line": 98,
+        "commit": "d80acd1f"
+      },
+      {
+        "rule": "stripe-access-token",
+        "file": "../../../../../../../../root/ai-debt-audit/docs/topics/funding.md",
+        "line": 143,
+        "commit": "d80acd1f"
+      },
+      {
+        "rule": "stripe-access-token",
+        "file": "../../../../../../../../root/ai-debt-audit/docs/topics/funding.md",
+        "line": 177,
+        "commit": "d80acd1f"
+      },
+      {
+        "rule": "stripe-access-token",
+        "file": "../../../../../../../../root/ai-debt-audit/docs/topics/funding.md",
+        "line": 211,
+        "commit": "d80acd1f"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/djangorestframework/authentication.py",
+        "line": 120,
+        "commit": "f741cdae"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/docs/api-guide/authentication.md",
+        "line": 72,
+        "commit": "f741cdae"
+      }
+    ]
+  },
+  "bandit": {
+    "score": 16,
+    "totalFindings": 2275,
+    "byCategory": {
+      "LOW": 2246,
+      "MEDIUM": 29
+    },
+    "top": [
+      {
+        "testId": "B703",
+        "severity": "MEDIUM",
+        "file": "rest_framework/templatetags/rest_framework.py",
+        "line": 44,
+        "text": "Potential XSS on mark_safe function."
+      },
+      {
+        "testId": "B308",
+        "severity": "MEDIUM",
+        "file": "rest_framework/templatetags/rest_framework.py",
+        "line": 44,
+        "text": "Use of mark_safe() may expose cross-site scripting vulnerabilities and should be reviewed."
+      },
+      {
+        "testId": "B703",
+        "severity": "MEDIUM",
+        "file": "rest_framework/templatetags/rest_framework.py",
+        "line": 78,
+        "text": "Potential XSS on mark_safe function."
+      },
+      {
+        "testId": "B308",
+        "severity": "MEDIUM",
+        "file": "rest_framework/templatetags/rest_framework.py",
+        "line": 78,
+        "text": "Use of mark_safe() may expose cross-site scripting vulnerabilities and should be reviewed."
+      },
+      {
+        "testId": "B703",
+        "severity": "MEDIUM",
+        "file": "rest_framework/templatetags/rest_framework.py",
+        "line": 94,
+        "text": "Potential XSS on mark_safe function."
+      }
+    ]
+  },
+  "dependencyVulns": null,
+  "cognitive": {
+    "score": 38,
+    "busFactorRiskRatio": 0.37812288993923027,
+    "totalAuthors": 1436,
+    "dampingFactor": 1,
+    "isShallowClone": false,
+    "totalFilesTracked": 1481,
+    "singleAuthorFiles": 560
+  },
+  "intent": {
+    "score": 1,
+    "genericMessageRatio": 0.005795872208085948,
+    "refactorRatio": 0.020921685043822448,
+    "note": "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction."
+  },
+  "weights": {
+    "technical": 0.5,
+    "cognitive": 0.25,
+    "intent": 0.25
+  }
+}

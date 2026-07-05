@@ -1,0 +1,55 @@
+{
+  "composite": 17,
+  "tier": "Low",
+  "technical": {
+    "score": 0,
+    "byCategory": {
+      "uncategorized": {
+        "count": 3,
+        "weight": 3
+      }
+    },
+    "totalFindings": 3,
+    "totalWeight": 3,
+    "blendedScore": 5
+  },
+  "duplication": {
+    "score": 27,
+    "percentage": 5.377340997589468,
+    "duplicatedLines": 1450,
+    "totalLines": 26965,
+    "clones": 122
+  },
+  "historicalSecrets": {
+    "score": 0,
+    "leakCount": 0,
+    "leaks": []
+  },
+  "bandit": {
+    "score": 0,
+    "totalFindings": 0,
+    "byCategory": {},
+    "top": []
+  },
+  "dependencyVulns": null,
+  "cognitive": {
+    "score": 56,
+    "busFactorRiskRatio": 0.5593803786574871,
+    "totalAuthors": 145,
+    "dampingFactor": 1,
+    "isShallowClone": false,
+    "totalFilesTracked": 1743,
+    "singleAuthorFiles": 975
+  },
+  "intent": {
+    "score": 0,
+    "genericMessageRatio": 0.001053740779768177,
+    "refactorRatio": 0.02845100105374078,
+    "note": "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction."
+  },
+  "weights": {
+    "technical": 0.5,
+    "cognitive": 0.25,
+    "intent": 0.25
+  }
+}

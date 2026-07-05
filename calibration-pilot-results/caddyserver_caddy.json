@@ -1,0 +1,152 @@
+{
+  "composite": 28,
+  "tier": "Medium",
+  "technical": {
+    "score": 3,
+    "byCategory": {
+      "uncategorized": {
+        "count": 23,
+        "weight": 23
+      },
+      "security": {
+        "count": 1,
+        "weight": 5
+      },
+      "error_handling": {
+        "count": 3,
+        "weight": 10
+      },
+      "incomplete_implementation": {
+        "count": 2,
+        "weight": 8
+      }
+    },
+    "totalFindings": 29,
+    "totalWeight": 46,
+    "blendedScore": 29
+  },
+  "duplication": {
+    "score": 23,
+    "percentage": 4.681174552581927,
+    "duplicatedLines": 5111,
+    "totalLines": 109182,
+    "clones": 405
+  },
+  "historicalSecrets": {
+    "score": 100,
+    "leakCount": 14,
+    "leaks": [
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/integration/reverseproxy_test.go",
+        "line": 655,
+        "commit": "e38228b5"
+      },
+      {
+        "rule": "private-key",
+        "file": "../../../../../../../../root/ai-debt-audit/admin_test.go",
+        "line": 809,
+        "commit": "d7621fdb"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/integration/caddyfile_adapt/global_options_acme.txt",
+        "line": 65,
+        "commit": "13781e67"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/integration/caddyfile_adapt/global_options_acme.txt",
+        "line": 66,
+        "commit": "13781e67"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/integration/caddyfile_adapt/global_options_acme.txt",
+        "line": 64,
+        "commit": "6a14e2c2"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/integration/caddyfile_adapt/global_options_acme.txt",
+        "line": 65,
+        "commit": "6a14e2c2"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/integration/caddyfile_adapt/global_options_acme.txt",
+        "line": 65,
+        "commit": "d84a5d84"
+      },
+      {
+        "rule": "private-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/a.caddy.localhost.key",
+        "line": 1,
+        "commit": "3f48a2eb"
+      },
+      {
+        "rule": "private-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytest/caddy.localhost.key",
+        "line": 1,
+        "commit": "c4472363"
+      },
+      {
+        "rule": "private-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddyhttp/proxy/testdata/privkey.pem",
+        "line": 1,
+        "commit": "22b835b9"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddytls/tls.go",
+        "line": 186,
+        "commit": "ac4fa2c3"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddy/https/https.go",
+        "line": 407,
+        "commit": "987a5f98"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddy/https/setup.go",
+        "line": 232,
+        "commit": "462128cd"
+      },
+      {
+        "rule": "private-key",
+        "file": "../../../../../../../../root/ai-debt-audit/caddy/https/setup_test.go",
+        "line": 225,
+        "commit": "d25a3e95"
+      }
+    ]
+  },
+  "bandit": {
+    "score": 0,
+    "totalFindings": 0,
+    "byCategory": {},
+    "top": []
+  },
+  "dependencyVulns": null,
+  "cognitive": {
+    "score": 55,
+    "busFactorRiskRatio": 0.545346062052506,
+    "totalAuthors": 413,
+    "dampingFactor": 1,
+    "isShallowClone": false,
+    "totalFilesTracked": 838,
+    "singleAuthorFiles": 457
+  },
+  "intent": {
+    "score": 0,
+    "genericMessageRatio": 0.0003852080123266564,
+    "refactorRatio": 0.030431432973805857,
+    "note": "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction."
+  },
+  "weights": {
+    "technical": 0.5,
+    "cognitive": 0.25,
+    "intent": 0.25
+  }
+}

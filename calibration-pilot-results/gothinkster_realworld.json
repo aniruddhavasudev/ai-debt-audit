@@ -1,0 +1,68 @@
+{
+  "composite": 26,
+  "tier": "Medium",
+  "technical": {
+    "score": 0,
+    "byCategory": {
+      "incomplete_implementation": {
+        "count": 4,
+        "weight": 4
+      }
+    },
+    "totalFindings": 4,
+    "totalWeight": 4,
+    "blendedScore": 19
+  },
+  "duplication": {
+    "score": 39,
+    "percentage": 7.831120190670752,
+    "duplicatedLines": 920,
+    "totalLines": 11748,
+    "clones": 78
+  },
+  "historicalSecrets": {
+    "score": 50,
+    "leakCount": 2,
+    "leaks": [
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/nx.json",
+        "line": 73,
+        "commit": "4361079f"
+      },
+      {
+        "rule": "generic-api-key",
+        "file": "../../../../../../../../root/ai-debt-audit/nx.json",
+        "line": 14,
+        "commit": "279e2437"
+      }
+    ]
+  },
+  "bandit": {
+    "score": 0,
+    "totalFindings": 0,
+    "byCategory": {},
+    "top": []
+  },
+  "dependencyVulns": null,
+  "cognitive": {
+    "score": 65,
+    "busFactorRiskRatio": 0.6458607095926413,
+    "totalAuthors": 94,
+    "dampingFactor": 1,
+    "isShallowClone": false,
+    "totalFilesTracked": 1522,
+    "singleAuthorFiles": 983
+  },
+  "intent": {
+    "score": 1,
+    "genericMessageRatio": 0.010486177311725452,
+    "refactorRatio": 0.0438512869399428,
+    "note": "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction."
+  },
+  "weights": {
+    "technical": 0.5,
+    "cognitive": 0.25,
+    "intent": 0.25
+  }
+}
