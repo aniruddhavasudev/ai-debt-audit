@@ -1,6 +1,6 @@
 {
   "name": "ai-debt-audit",
-  "description": "Scan a repo for AI-generated technical, cognitive, and intent debt \u2014 deterministic, fully local, no LLM calls. 74 Semgrep rules plus Bandit, pip-audit, npm audit, jscpd, and gitleaks.",
+  "description": "Finds hidden risks in AI-generated code \u2014 security gaps, shortcuts, and knowledge trapped in one person's head. 100% private, runs on your machine.",
   "version": "1.6.0",
   "author": {
     "name": "aniruddhavasudev"
