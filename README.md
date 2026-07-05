@@ -6,13 +6,6 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/aniruddhavasudev/ai-debt-audit/ci.yml?label=CI&logo=githubactions&logoColor=white&color=2ea44f&style=for-the-badge)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
 [![AI-Debt Score](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json&style=for-the-badge)](examples/sample-report.md)
-[![License](https://img.shields.io/badge/License-AGPL%20v3-1e90ff?style=for-the-badge)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/aniruddhavasudev/ai-debt-audit?style=for-the-badge&color=f1c40f)](https://github.com/aniruddhavasudev/ai-debt-audit/stargazers)
-
-![Rules](https://img.shields.io/badge/detection_rules-74-ff6b6b?style=for-the-badge)
-![Tools](https://img.shields.io/badge/tools_used-7-9b59b6?style=for-the-badge)
-![Languages](https://img.shields.io/badge/languages-6-16a085?style=for-the-badge)
-![LLM calls](https://img.shields.io/badge/sends_data_to_AI-never-e74c3c?style=for-the-badge)
 
 *The "AI-Debt Score" badge is this repo scanning itself, on a schedule — a live number, not a claim.*
 
@@ -21,6 +14,7 @@
 <a href="#-what-it-catches"><img src="https://img.shields.io/badge/-What_It_Catches-2ea44f?style=for-the-badge" /></a>
 <a href="docs/TOOLS.md"><img src="https://img.shields.io/badge/-The_7_Tools-16a085?style=for-the-badge" /></a>
 <a href="docs/USAGE.md"><img src="https://img.shields.io/badge/-Full_Usage-ff6b6b?style=for-the-badge" /></a>
+<a href="#-use-it-as-a-claude-code-plugin"><img src="https://img.shields.io/badge/-Claude_Code_Plugin-cc785c?style=for-the-badge" /></a>
 <a href="CALIBRATION_50_REPOS.md"><img src="https://img.shields.io/badge/-Calibration-f1c40f?style=for-the-badge" /></a>
 </p>
 
@@ -88,7 +82,7 @@ If you run this and it finds something real, a star helps other people find it t
 
 ## ✅ What it catches
 
-In plain terms: things like exposed data, security shortcuts, secrets accidentally left in the code, and knowledge trapped in one person's head.
+In plain terms: things like exposed data, security shortcuts, secrets accidentally left in the code, and knowledge trapped in one person's head — the kind of stuff that's easy to miss when code was generated fast and merged even faster.
 
 Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects.
 
@@ -98,19 +92,21 @@ Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects.
 
 ## 🚀 Quick start
 
-```bash
-# Docker — zero local installs
-docker build -t ai-debt-audit .
-docker run --rm -v /path/to/any/repo:/repo ai-debt-audit . --out ai-debt-report.md
-```
+Three things to install, then one command to run:
 
 ```bash
-# Local install
+# 1. Install the scanning tools this project relies on
 pip3 install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
+
+# 2. Get the code and link the CLI
 git clone https://github.com/aniruddhavasudev/ai-debt-audit.git
 cd ai-debt-audit && npm install && npm link
+
+# 3. Scan any repo on your machine
 aidebt-scan /path/to/any/repo
 ```
+
+That's it — no accounts, no config required, no code sent anywhere.
 
 ```
 ────────────────────────────────────────────────────────
@@ -132,7 +128,7 @@ A real run, not a mockup — Markdown + styled standalone HTML, every time.
 
 ![Usage](https://img.shields.io/badge/📖_docs/USAGE.md-1e90ff?style=for-the-badge)
 
-Full flag reference, `.aidebtrc.json` config, GitHub Action setup, Claude Code skill install.
+Full flag reference, `.aidebtrc.json` config, GitHub Action setup, Claude Code plugin install.
 
 </td>
 <td width="50%" align="center">
@@ -145,6 +141,27 @@ What each of the seven tools catches and how the score is composed.
 </tr>
 </table>
 </div>
+
+<br>
+
+## 🔌 Use it as a Claude Code plugin
+
+If you use [Claude Code](https://claude.com/claude-code), you don't need to run the CLI by hand — install this repo as a plugin and just ask Claude to audit your code. It runs a real scan (not a description of one) and reads the results back to you.
+
+```
+/plugin marketplace add aniruddhavasudev/ai-debt-audit
+/plugin install ai-debt-audit@ai-debt-audit
+```
+
+Then just ask, in plain language:
+
+> "Audit this repo for AI-generated debt"
+> "Check for risks Copilot/Cursor may have left behind"
+> "Give me a due-diligence debt score before we hand this off"
+
+You still need `semgrep`, `bandit`, `pip-audit`, and `gitleaks` installed on your machine (step 1 of [Quick start](#-quick-start)) — the plugin runs the same local scanner, it just wires it into the conversation.
+
+**→ Full plugin setup and verification steps: [docs/USAGE.md](docs/USAGE.md#using-it-as-a-claude-code-plugin)**
 
 <br>
 

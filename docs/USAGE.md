@@ -2,14 +2,6 @@
 
 ## Installing
 
-**Docker (zero local installs):**
-```bash
-docker build -t ai-debt-audit .
-docker run --rm -v /path/to/any/repo:/repo ai-debt-audit . --out ai-debt-report.md
-```
-All seven tools ship pre-installed. Output paths must point *inside* `/repo` (the mounted volume) or the file vanishes with the container — `--out ai-debt-report.md` lands in the repo root on your host; `--out /tmp/report.md` would not.
-
-**Local install:**
 ```bash
 pip3 install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
 
@@ -75,9 +67,25 @@ This runs the full scan on every PR, uploads findings to GitHub's Security tab a
 
 **`fetch-depth: 0` is not optional.** `actions/checkout`'s default (`fetch-depth: 1`, a single commit) silently wrecks the cognitive/intent debt scores — confirmed empirically: a shallow 50-commit clone of a mature, widely-contributed project scored cognitive debt at 86/100; the same repo with full history scored 37/100. It doesn't error, it just quietly produces a wrong number, because bus-factor and commit-message analysis both need real history to mean anything. The scanner detects a shallow clone and warns in the terminal and report if this happens anyway — but fixing the checkout step avoids the problem entirely.
 
-## Using it as a Claude Code skill
+## Using it as a Claude Code plugin
 
-This repo is also packaged as a Claude Code plugin ([`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), [`skills/ai-debt-audit/SKILL.md`](../skills/ai-debt-audit/SKILL.md)) — install it and Claude will run a real scan (not just describe one) when asked to audit a repo for AI-generated debt.
+This repo is also packaged as a Claude Code plugin ([`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json), [`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json), [`skills/ai-debt-audit/SKILL.md`](../skills/ai-debt-audit/SKILL.md)) — install it and Claude will run a real scan (not just describe one) whenever you ask it to audit a repo for AI-generated debt.
+
+Inside a Claude Code session:
+
+```
+/plugin marketplace add aniruddhavasudev/ai-debt-audit
+/plugin install ai-debt-audit@ai-debt-audit
+```
+
+Then verify it's installed:
+
+```
+/plugin
+```
+(check the **Installed** tab, or run `/plugin list`)
+
+No restart needed — plugins apply immediately. Once installed, just ask Claude something like *"audit this repo for AI-generated debt"* and it runs `aidebt-scan` for real instead of describing what it would do. The scanning tools (`semgrep`, `bandit`, `pip-audit`, `gitleaks`) still need to be installed on your machine first — see [Installing](#installing) above.
 
 ## About `test-fixtures/`
 

@@ -2,7 +2,7 @@
 
 This is the first batch of a planned 50-repo calibration effort — scanning real, popular, public open-source repositories with `aidebt-scan` to see how the composite score behaves outside the handful of repos used during development. This is **not** a claim that any of these repos were built by an AI assistant — there's no reliable way to label that externally. The goal here is narrower and more honest: does the score distribute sensibly across real, diverse, human-maintained codebases, and does the tool crash, hang, or produce nonsense at real-world scale?
 
-**Methodology:** full `git clone` (no shallow clones — see the shallow-clone finding in [CALIBRATION.md](CALIBRATION.md) for why that matters), then `aidebt-scan <repo> --json`, defaults only, no `.aidebtrc.json` overrides. Raw JSON output for every repo below is kept in [`calibration-pilot-results/`](calibration-pilot-results/) so these numbers are independently checkable.
+**Methodology:** full `git clone` (no shallow clones — see the shallow-clone finding in [CALIBRATION.md](CALIBRATION.md) for why that matters), then `aidebt-scan <repo> --json`, defaults only, no `.aidebtrc.json` overrides. Raw JSON output for every repo below is kept in [`calibration-pilot-results/`](https://github.com/aniruddhavasudev/ai-debt-audit/tree/test-data/calibration-pilot-results) so these numbers are independently checkable.
 
 ## Results (12 attempted, 11 scored)
 
