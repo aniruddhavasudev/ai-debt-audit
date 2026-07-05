@@ -12,7 +12,15 @@
 // and topFindings()'s path-relativization already happened in-place on the
 // same finding objects by the time this runs.
 
+import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Real package version, not a hardcoded string that drifts (it had drifted
+// to "1.0.0" while the package was at 1.10.0).
+const PACKAGE_VERSION = JSON.parse(
+  fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json"), "utf8")
+).version;
 
 const SARIF_LEVEL = {
   ERROR: "error",
@@ -88,7 +96,7 @@ export function renderSarif(semgrepResults, banditResults, repoRoot) {
           driver: {
             name: "ai-debt-audit",
             informationUri: "https://github.com/aniruddhavasudev/ai-debt-audit",
-            version: "1.0.0",
+            version: PACKAGE_VERSION,
             rules: [...rules.values()],
           },
         },

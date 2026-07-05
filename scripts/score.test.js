@@ -11,6 +11,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { globToRegExp } from "./config.js";
+import { parseArgs } from "../lib/args.js";
 import {
   teamSizeDampingFactor,
   riskTier,
@@ -288,4 +289,29 @@ test("scoreCognitiveDebt — surfaces giantDumpCommits and giantDumpCommitList f
   });
   assert.equal(result.giantDumpCommits, 1);
   assert.equal(result.giantDumpCommitList.length, 1);
+});
+
+// --- parseArgs (lib/args.js) — regression tests for the flag parser ---
+
+test("parseArgs — a bare flag followed by another flag does not swallow it as a value", () => {
+  // Regression: `--out --html x` used to make "--html" the output path and
+  // "x" a positional scan target.
+  const args = parseArgs(["--out", "--html", "x"]);
+  assert.equal(args.out, undefined, "bare --out should not consume --html as its value");
+  assert.equal(args.html, "x");
+  assert.deepEqual(args._, []);
+});
+
+test("parseArgs — flag with a value, empty-string opt-out, and positional args all parse", () => {
+  const args = parseArgs(["/some/repo", "--out", "r.md", "--html", "", "--fail-on-score", "70"]);
+  assert.deepEqual(args._, ["/some/repo"]);
+  assert.equal(args.out, "r.md");
+  assert.equal(args.html, "", "empty string is the documented opt-out, must not be dropped");
+  assert.equal(args["fail-on-score"], "70");
+});
+
+test("parseArgs — a trailing bare flag is undefined, not a crash", () => {
+  const args = parseArgs(["repo", "--json"]);
+  assert.equal(args.json, undefined);
+  assert.deepEqual(args._, ["repo"]);
 });
