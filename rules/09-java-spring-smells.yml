@@ -1,0 +1,180 @@
+rules:
+  - id: ai-debt-spring-csrf-disabled
+    languages: [java]
+    severity: ERROR
+    message: >
+      Spring Security's CSRF protection explicitly disabled
+      (`.csrf().disable()`). AI assistants reach for this to silence a 403
+      during quick API testing, and it's rarely re-enabled once the
+      immediate error goes away — the same failure mode as Rails'
+      `skip_before_action :verify_authenticity_token`.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: $HTTP.csrf().disable()
+          - pattern: $HTTP.csrf(AbstractHttpConfigurer::disable)
+
+  - id: ai-debt-spring-permit-all-everything
+    languages: [java]
+    severity: ERROR
+    message: >
+      Spring Security configured with `anyRequest().permitAll()` — every
+      endpoint open with no authentication. Common AI shortcut to make a
+      403/401 error go away during development, left in place because the
+      app "just worked" afterward.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: $AUTH.anyRequest().permitAll()
+
+  - id: ai-debt-spring-cors-wildcard
+    languages: [java]
+    severity: WARNING
+    message: >
+      `@CrossOrigin` (or CORS config) allowing a wildcard origin. Common
+      AI shortcut to silence a browser CORS error during development; if
+      this is an authenticated API, a wildcard origin undermines
+      cookie/credential protections the same way as the
+      Flask/Rails/Express/Go equivalents.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    patterns:
+      - pattern-either:
+          - pattern: '@CrossOrigin(origins = "*")'
+          - pattern: $CONFIG.addAllowedOrigin("*")
+
+  - id: ai-debt-java-sql-string-concat
+    languages: [java]
+    severity: ERROR
+    message: >
+      SQL query built via string concatenation instead of a
+      PreparedStatement placeholder. AI-generated CRUD/JDBC code that
+      "looks correct" until a value contains a quote — the same failure
+      mode as raw cursor.execute() in Python or fmt.Sprintf() in Go.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: $STMT.executeQuery("..." + $X + "...")
+          - pattern: $STMT.execute("..." + $X + "...")
+          - pattern: $STMT.executeUpdate("..." + $X + "...")
+
+  - id: ai-debt-java-command-injection
+    languages: [java]
+    severity: ERROR
+    message: >
+      Runtime.exec()/ProcessBuilder invoked with a concatenated string
+      rather than a fixed argument array. AI-generated glue code reaches
+      for this to "run a shell command" without considering that any
+      attacker-influenced part of the string becomes arbitrary command
+      execution.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: Runtime.getRuntime().exec("..." + $X + "...")
+          - pattern: Runtime.getRuntime().exec("..." + $X)
+          - pattern: new ProcessBuilder("sh", "-c", "..." + $X + "...")
+          - pattern: new ProcessBuilder("sh", "-c", "..." + $X)
+
+  - id: ai-debt-java-insecure-random-for-token
+    languages: [java]
+    severity: WARNING
+    message: >
+      java.util.Random used to generate a value that looks security-
+      sensitive (token/secret/password/key). java.util.Random is not
+      cryptographically secure and is predictable from its seed —
+      java.security.SecureRandom is the correct class for anything used
+      as a credential.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    patterns:
+      - pattern: $TOKEN = new Random().$METHOD(...)
+      - metavariable-regex:
+          metavariable: $TOKEN
+          regex: "(?i).*(token|secret|password|passwd|apikey|api_key|session).*"
+
+  - id: ai-debt-java-path-traversal
+    languages: [java]
+    severity: ERROR
+    message: >
+      File path built by concatenating a base directory with unsanitized
+      input. Without stripping "..", an attacker-controlled filename
+      component can escape the intended directory — a classic path-
+      traversal primitive AI-generated "serve this file" handlers
+      frequently miss.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: new File($BASE + $USERINPUT)
+          - pattern: Paths.get($BASE + $USERINPUT)
+
+  - id: ai-debt-java-xxe-vulnerable-parser
+    languages: [java]
+    severity: ERROR
+    message: >
+      DocumentBuilderFactory (or similar XML parser) instantiated without
+      disabling external entity resolution — an XML External Entity
+      (XXE) vulnerability. AI-generated "parse this XML" code very
+      commonly omits the hardening calls, since the happy-path parsing
+      works identically with or without them.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern: $FACTORY = DocumentBuilderFactory.newInstance();
+      - pattern-not-inside: |
+          $FACTORY = DocumentBuilderFactory.newInstance();
+          ...
+          $FACTORY.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+  - id: ai-debt-java-insecure-deserialization
+    languages: [java]
+    severity: ERROR
+    message: >
+      ObjectInputStream.readObject() deserializing data that may
+      originate outside the process (session, cache, request body,
+      message queue). Unlike JSON, deserializing attacker-controlled
+      Java object streams is a well-known direct remote-code-execution
+      primitive — the same category of risk as Python's pickle.loads or
+      Ruby's Marshal.load.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: $STREAM.readObject()
+
+  - id: ai-debt-java-trust-all-certs
+    languages: [java]
+    severity: ERROR
+    message: >
+      A TrustManager/HostnameVerifier implemented to accept every
+      certificate/hostname unconditionally — disables TLS verification
+      entirely. Seen repeatedly in AI-generated "fix the SSL handshake
+      error" responses that silence the error instead of resolving the
+      underlying cert issue, the same pattern as Python's verify=False,
+      Node's rejectUnauthorized:false, or Go's InsecureSkipVerify.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new X509TrustManager() {
+                ...
+                public void checkServerTrusted(...) { }
+                ...
+              }
+          - pattern: |
+              new HostnameVerifier() {
+                ...
+                public boolean verify(...) { return true; }
+                ...
+              }

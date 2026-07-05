@@ -82,6 +82,16 @@ const EXPECTED_RULE_IDS = [
   "ai-debt-go-cors-wildcard",
   "ai-debt-go-panic-recover-swallowed",
   "ai-debt-go-jwt-none-algorithm",
+  "ai-debt-spring-csrf-disabled",
+  "ai-debt-spring-permit-all-everything",
+  "ai-debt-spring-cors-wildcard",
+  "ai-debt-java-sql-string-concat",
+  "ai-debt-java-command-injection",
+  "ai-debt-java-insecure-random-for-token",
+  "ai-debt-java-path-traversal",
+  "ai-debt-java-xxe-vulnerable-parser",
+  "ai-debt-java-insecure-deserialization",
+  "ai-debt-java-trust-all-certs",
 ];
 
 function main() {

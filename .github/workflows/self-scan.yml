@@ -43,14 +43,13 @@ jobs:
       - name: Install project dependencies
         run: npm install
 
-      - name: Scan this repo, excluding test-fixtures (deliberately not representative of this project's own debt)
-        run: |
-          cat > /tmp/self-scan-config.json << 'EOF'
-          { "excludePaths": ["test-fixtures/**"] }
-          EOF
-          cp /tmp/self-scan-config.json .aidebtrc.json
-          node bin/aidebt-scan.js . --badge badge.json --out /tmp/self-scan-report.md
-          rm .aidebtrc.json
+      - name: Scan this repo
+        # Uses the repo's own committed .aidebtrc.json, which excludes
+        # test-fixtures/** (deliberately not representative of this
+        # project's own debt) — the same config also keeps PR-triggered
+        # scans (ai-debt-check.yml) from flagging those intentional
+        # vulnerable fixtures as new code-scanning alerts.
+        run: node bin/aidebt-scan.js . --badge badge.json --out /tmp/self-scan-report.md
 
       - name: Commit the updated badge if it changed
         run: |

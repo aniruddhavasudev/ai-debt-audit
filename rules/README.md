@@ -19,6 +19,7 @@ Semgrep scans every `.yml` in this directory automatically — no need to refere
 - `06-django-flask-smells.yml` — `DEBUG=True`, CSRF/CORS misconfiguration, SSTI, insecure deserialization
 - `07-rails-smells.yml` — mass assignment (`params.permit!`, raw `params[...]`), `.html_safe`/`raw()` XSS, SQL string interpolation, `Marshal.load`, dangerous `send`
 - `08-go-smells.yml` — SQL/command injection via `fmt.Sprintf`, `InsecureSkipVerify`, `math/rand` for tokens, path traversal, empty `if err != nil {}`, JWT "none" algorithm
+- `09-java-spring-smells.yml` — Spring `.csrf().disable()`/`permitAll()`, CORS wildcard, SQL/command injection, `SecureRandom` vs `Random`, path traversal, XXE, insecure deserialization, trust-all TLS
 
 ## Extending the rule set
 

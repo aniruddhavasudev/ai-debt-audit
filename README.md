@@ -18,14 +18,14 @@
 
 A repo scanner for the specific mess that AI coding assistants leave behind: disabled RLS policies, auth checks that only exist in the happy path, `debug=True` still on, secrets copy-pasted from a tutorial, and the quieter stuff — one person owning half the codebase, commits that just say "fix," nobody writing down why anything is the way it is.
 
-Point it at a repo, it runs six tools, you get one score and a full breakdown. Takes a few seconds. Fully local — nothing calls an LLM, nothing leaves your machine.
+Point it at a repo, it runs seven tools, you get one score and a full breakdown. Takes a few seconds. Fully local — nothing calls an LLM, nothing leaves your machine.
 
 <table>
 <tr>
 <td width="33%" valign="top">
 
 ### 🔧 Technical debt
-The code itself — security holes, duplicated logic, unfinished stubs. Caught by 64 custom Semgrep rules plus Bandit, pip-audit, and jscpd.
+The code itself — security holes, duplicated logic, unfinished stubs. Caught by 74 custom Semgrep rules plus Bandit, pip-audit, npm audit, and jscpd.
 
 </td>
 <td width="33%" valign="top">
@@ -57,14 +57,15 @@ By some counts, roughly 10,000 startups shipped a production app built mostly by
 
 I built it deterministic on purpose. Every finding traces back to a specific rule and a specific line — no "the model thinks this looks risky," because that's not something you can hand to a VC doing diligence or argue with when it's wrong. (And it is sometimes wrong — see the note below about the auth-check rule.) Nothing in this pipeline calls out to an LLM. Nothing leaves your machine.
 
-## The six tools, and what each one actually catches
+## The seven tools, and what each one actually catches
 
 | Tool | What it's for |
 |---|---|
-| Semgrep, 64 custom rules | The AI-specific stuff: disabled Supabase RLS, Flask SSTI via `render_template_string`, Django `DEBUG=True`, Rails mass-assignment via `params.permit!`, Go's `if err != nil {}` swallowed silently, `NotImplementedError` stubs that made it to main |
-| Semgrep's own `p/django` + `p/flask` + `p/golang` packs | Didn't want to hand-write every framework-specific rule when Semgrep's community registry already covers a lot of this better than I would |
+| Semgrep, 74 custom rules | The AI-specific stuff: disabled Supabase RLS, Flask SSTI via `render_template_string`, Django `DEBUG=True`, Rails mass-assignment via `params.permit!`, Go's `if err != nil {}` swallowed silently, Spring's `.csrf().disable()`, `NotImplementedError` stubs that made it to main |
+| Semgrep's own `p/django` + `p/flask` + `p/golang` + `p/java` packs | Didn't want to hand-write every framework-specific rule when Semgrep's community registry already covers a lot of this better than I would (checked first — `p/spring` doesn't actually exist as a pack, so Spring gets custom rules only) |
 | Bandit | Python security linting — hardcoded passwords, `pickle.loads`, that kind of thing |
-| pip-audit | Checks your actual pinned dependency versions against known CVEs |
+| pip-audit | Checks your actual pinned Python dependency versions against known CVEs |
+| npm audit | Same thing for JS/TS — runs directly against `package-lock.json`, never installs the target's dependencies (so it never executes an untrusted repo's install scripts) |
 | jscpd | Copy-paste detection |
 | gitleaks | Secrets anywhere in git history, not just the current snapshot — a key that was committed and deleted three months ago still counts |
 
@@ -77,7 +78,7 @@ Plus a small custom script (`scripts/git-mine.js`) that mines git log for the st
 docker build -t ai-debt-audit .
 docker run --rm -v /path/to/any/repo:/repo ai-debt-audit . --out ai-debt-report.md
 ```
-All six tools ship pre-installed in the image — nothing to `pip install` yourself. One thing to know: any `--out`/`--html`/`--pdf` path needs to point *inside* `/repo` (the mounted volume) or the file vanishes with the container when it exits — `--out ai-debt-report.md` lands in the repo root on your host; `--out /tmp/report.md` would not.
+All seven tools ship pre-installed in the image — nothing to `pip install` yourself. One thing to know: any `--out`/`--html`/`--pdf` path needs to point *inside* `/repo` (the mounted volume) or the file vanishes with the container when it exits — `--out ai-debt-report.md` lands in the repo root on your host; `--out /tmp/report.md` would not.
 
 **Option B — local install:**
 

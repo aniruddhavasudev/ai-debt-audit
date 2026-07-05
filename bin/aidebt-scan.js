@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * aidebt-scan — orchestrates the four scanning tools (Semgrep, git-mine.js,
- * jscpd, gitleaks) against a target repo and produces one AI-Debt Report.
+ * aidebt-scan — orchestrates the scanning tools (Semgrep, git-mine.js,
+ * jscpd, gitleaks, Bandit, pip-audit, npm audit) against a target repo
+ * and produces one AI-Debt Report.
  *
  * This file intentionally contains no scoring logic of its own — it only
  * wires processes together and hands their output to scripts/score.js.
@@ -207,7 +208,7 @@ function step(label, fn) {
 // custom AI-debt rules, not instead of them: the registry doesn't know
 // about AI-specific smells (placeholder stubs, framework misuse patterns),
 // only our rules do.
-const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask", "p/golang"];
+const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask", "p/golang", "p/java"];
 
 function runSemgrep(targetPath, outPath, changedFiles) {
   const configArgs = [RULES_DIR, ...SEMGREP_REGISTRY_PACKS].flatMap((cfg) => ["--config", cfg]);
@@ -286,6 +287,33 @@ function runPipAudit(targetPath, outPath) {
     });
   } catch {
     // pip-audit exits non-zero when vulnerabilities are found — success for us.
+  }
+  return fileExists(outPath) ? outPath : null;
+}
+
+function runNpmAudit(targetPath, outPath) {
+  const lockfilePath = path.join(targetPath, "package-lock.json");
+  if (!fileExists(lockfilePath)) {
+    console.error(c.yellow("  no package-lock.json found — skipping npm dependency vulnerability scan"));
+    return null;
+  }
+  // Deliberately npm audit, not `npm install && npm audit` — auditing works
+  // directly from the lockfile, so we never need to run an untrusted
+  // repo's install scripts (postinstall etc.) just to check its
+  // dependencies for known CVEs. Same safety posture as pip-audit, which
+  // also never installs the target's packages.
+  try {
+    const result = execFileSync("npm", ["audit", "--json"], {
+      cwd: targetPath,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    fs.writeFileSync(outPath, result);
+  } catch (err) {
+    // npm audit exits non-zero when vulnerabilities are found — that's
+    // success for us, not an error. It still prints the JSON to stdout,
+    // which execFileSync attaches to the thrown error object.
+    if (err.stdout) fs.writeFileSync(outPath, err.stdout);
   }
   return fileExists(outPath) ? outPath : null;
 }
@@ -449,6 +477,7 @@ function main() {
   const gitleaksOut = step("gitleaks (historical secrets)", () => runGitleaks(targetPath, path.join(workDir, "gitleaks.json")));
   const banditOut = step("bandit (Python security)", () => runBandit(targetPath, path.join(workDir, "bandit.json"), changedFiles));
   const pipAuditOut = step("pip-audit (dependency vulnerabilities)", () => runPipAudit(targetPath, path.join(workDir, "pip-audit.json")));
+  const npmAuditOut = step("npm audit (dependency vulnerabilities)", () => runNpmAudit(targetPath, path.join(workDir, "npm-audit.json")));
 
   if (!semgrepOut || !gitmineOut) {
     console.error(
@@ -462,6 +491,7 @@ function main() {
   if (gitleaksOut) scoreArgs.push("--gitleaks", gitleaksOut);
   if (banditOut) scoreArgs.push("--bandit", banditOut);
   if (pipAuditOut) scoreArgs.push("--pipaudit", pipAuditOut);
+  if (npmAuditOut) scoreArgs.push("--npmaudit", npmAuditOut);
 
   const outPath = args.out ? path.resolve(args.out) : path.resolve("ai-debt-report.md");
   const htmlPath = args.html === undefined ? outPath.replace(/\.md$/, "") + ".html" : args.html ? path.resolve(args.html) : null;

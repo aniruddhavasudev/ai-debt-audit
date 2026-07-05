@@ -32,7 +32,7 @@ inputs:
     required: false
     default: 'true'
   diff:
-    description: 'Base ref to diff against — only scans changed files instead of the whole repo. Pass ${{ github.event.pull_request.base.sha }} for PR-scoped scans. Requires the checkout step to use fetch-depth: 0.'
+    description: 'Base ref to diff against — only scans changed files instead of the whole repo. For PR-scoped scans, pass the base commit SHA (e.g., from github.event.pull_request.base.sha in your workflow). Requires the checkout step to use fetch-depth: 0'
     required: false
     default: ''
 

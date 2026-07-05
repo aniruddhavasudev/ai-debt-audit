@@ -1,0 +1,10 @@
+# Some source files (scripts/score.js in particular) contain unicode box-
+# drawing/block characters and emoji in string literals for the terminal
+# UI, which confuses `file`'s content-type heuristic into misdetecting
+# them as binary — git then shows "Bin X -> Y bytes" instead of a real
+# diff. Force text handling explicitly so diffs/blame stay usable.
+*.js text
+*.md text
+*.yml text
+*.yaml text
+*.json text
