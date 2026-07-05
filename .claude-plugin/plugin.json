@@ -1,7 +1,7 @@
 {
   "name": "ai-debt-audit",
-  "description": "Finds hidden risks in AI-generated code \u2014 security gaps, shortcuts, and knowledge trapped in one person's head. 100% private, runs on your machine.",
-  "version": "1.15.0",
+  "description": "Catches the garbage your AI assistant left behind — security shortcuts, secrets buried in git history, code nobody understands. One 0-100 score, 100% local, no LLM in the loop.",
+  "version": "1.16.0",
   "author": {
     "name": "aniruddhavasudev"
   },

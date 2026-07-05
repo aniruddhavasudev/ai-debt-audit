@@ -106,7 +106,7 @@ const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask", "p/golang", "p/java"];
 
 function runSemgrep(targetPath, outPath, changedFiles) {
   if (!binExists("semgrep")) {
-    console.error(c.yellow("  semgrep not found — the 74 AI-debt pattern rules will be skipped (pip install semgrep for the full scan)"));
+    console.error(c.yellow("  semgrep not found — AI-debt pattern rules skipped. Install: pip3 install semgrep"));
     return null;
   }
   const configArgs = [RULES_DIR, ...SEMGREP_REGISTRY_PACKS].flatMap((cfg) => ["--config", cfg]);
@@ -138,7 +138,7 @@ function runSemgrep(targetPath, outPath, changedFiles) {
 
 function runBandit(targetPath, outPath, changedFiles) {
   if (!binExists("bandit")) {
-    console.error(c.yellow("  bandit not found on PATH — skipping Python security scan (pip install bandit)"));
+    console.error(c.yellow("  bandit not found — Python security checks skipped. Install: pip3 install bandit"));
     return null;
   }
   const pythonFiles = changedFiles ? changedFiles.filter((f) => f.endsWith(".py")) : null;
@@ -171,7 +171,7 @@ function findRequirementsFile(targetPath) {
 
 function runPipAudit(targetPath, outPath) {
   if (!binExists("pip-audit")) {
-    console.error(c.yellow("  pip-audit not found on PATH — skipping dependency vulnerability scan (pip install pip-audit)"));
+    console.error(c.yellow("  pip-audit not found — Python dependency checks skipped. Install: pip3 install pip-audit"));
     return null;
   }
   const reqFile = findRequirementsFile(targetPath);
@@ -265,7 +265,7 @@ function runGitMine(targetPath, outPath) {
 
 function runJscpd(targetPath, outDir) {
   if (!fileExists(JSCPD_BIN)) {
-    console.error(c.yellow("  jscpd not found in node_modules — skipping duplication check (run `npm install`)"));
+    console.error(c.yellow("  jscpd not found — duplication check skipped. Install: npm install (in the ai-debt-audit directory)"));
     return null;
   }
   const reportPath = path.join(outDir, "jscpd-report.json");
@@ -281,7 +281,7 @@ function runJscpd(targetPath, outDir) {
 
 function runGitleaks(targetPath, outPath) {
   if (!binExists("gitleaks")) {
-    console.error(c.yellow("  gitleaks not found on PATH — skipping historical secrets check"));
+    console.error(c.yellow("  gitleaks not found — secrets detection skipped. Install: https://github.com/gitleaks/gitleaks#installing"));
     return null;
   }
   try {

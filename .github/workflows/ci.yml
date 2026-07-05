@@ -49,6 +49,9 @@ jobs:
       - name: Run .aidebtrc.json config integration test
         run: node scripts/test-config-integration.js
 
+      - name: Run zero-external-tools degradation test
+        run: node scripts/test-degraded.js
+
       - name: Smoke-test the full CLI end to end
         run: |
           node bin/aidebt-scan.js test-fixtures/flask --out /tmp/ci-report.md --html /tmp/ci-report.html
