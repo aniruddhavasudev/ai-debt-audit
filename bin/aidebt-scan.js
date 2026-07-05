@@ -187,10 +187,44 @@ function runPipAudit(targetPath, outPath) {
 
 function runNpmAudit(targetPath, outPath) {
   const lockfilePath = path.join(targetPath, "package-lock.json");
+  const manifestPath = path.join(targetPath, "package.json");
+  let auditCwd = targetPath;
+
   if (!fileExists(lockfilePath)) {
-    console.error(c.yellow("  no package-lock.json found — skipping npm dependency vulnerability scan"));
-    return null;
+    if (!fileExists(manifestPath)) {
+      console.error(c.yellow("  no package.json found — skipping npm dependency vulnerability scan"));
+      return null;
+    }
+    // Found in the 50-repo calibration run: most JS/TS *libraries* don't
+    // commit a lockfile (express, fastify, zod, chalk, ...), so requiring
+    // package-lock.json silently disabled dependency scanning for the
+    // majority of real JS repos. Generate a lockfile from package.json in
+    // a temp dir instead — `--package-lock-only --ignore-scripts` resolves
+    // the dependency tree WITHOUT installing anything or running any of
+    // the target repo's install scripts, preserving the safety posture
+    // documented below. The temp copy also guarantees we never write a
+    // package-lock.json into the repo being scanned.
+    const lockWorkDir = fs.mkdtempSync(path.join(os.tmpdir(), "aidebt-npmlock-"));
+    fs.copyFileSync(manifestPath, path.join(lockWorkDir, "package.json"));
+    try {
+      execFileSync(
+        "npm",
+        ["install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund"],
+        { cwd: lockWorkDir, stdio: ["ignore", "ignore", "ignore"], timeout: 120000 }
+      );
+    } catch {
+      // Unresolvable deps (private registries, workspace:* protocols) or
+      // no network — fall back to skipping, as before.
+    }
+    if (!fileExists(path.join(lockWorkDir, "package-lock.json"))) {
+      console.error(c.yellow("  no package-lock.json and one couldn't be derived from package.json — skipping npm dependency vulnerability scan"));
+      fs.rmSync(lockWorkDir, { recursive: true, force: true });
+      return null;
+    }
+    console.error(c.dim("  no committed package-lock.json — derived one from package.json (no scripts executed)"));
+    auditCwd = lockWorkDir;
   }
+
   // Deliberately npm audit, not `npm install && npm audit` — auditing works
   // directly from the lockfile, so we never need to run an untrusted
   // repo's install scripts (postinstall etc.) just to check its
@@ -198,7 +232,7 @@ function runNpmAudit(targetPath, outPath) {
   // also never installs the target's packages.
   try {
     const result = execFileSync("npm", ["audit", "--json"], {
-      cwd: targetPath,
+      cwd: auditCwd,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     });
@@ -209,6 +243,7 @@ function runNpmAudit(targetPath, outPath) {
     // which execFileSync attaches to the thrown error object.
     if (err.stdout) fs.writeFileSync(outPath, err.stdout);
   }
+  if (auditCwd !== targetPath) fs.rmSync(auditCwd, { recursive: true, force: true });
   return fileExists(outPath) ? outPath : null;
 }
 
