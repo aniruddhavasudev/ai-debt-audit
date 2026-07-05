@@ -501,62 +501,150 @@ function renderSarif(semgrepResults, banditResults, repoRoot) {
 // CSV is the "basic Excel format" ask — it opens natively in Excel, Google
 // Sheets, and Numbers with zero setup, and needs no new dependency (a
 // hand-rolled RFC 4180 quoting rule is a few lines; a full library would be
-// overkill for one flat table). One row per finding across every tool that
-// actually ran, so the whole thing is filterable/sortable by column in a
-// spreadsheet — the same "every finding, not a sample" principle as the
-// Markdown/HTML report's "All Findings" section.
+// overkill here). A real multi-tab .xlsx "workbook" would need an actual
+// XLSX-writing dependency, which isn't worth it for what's really just a
+// folder of related tables — so "workbook" here means a small directory of
+// CSV files (one per debt category, plus a summary) that a spreadsheet
+// user can open as a set, not one binary file with tabs.
 function csvEscape(value) {
   const s = value === null || value === undefined ? "" : String(value);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function renderCsv({ top, bandit, historicalSecrets, dependencyVulns, duplication, cognitive, intent }) {
-  const header = ["source", "severity", "rule_id", "file", "line", "message", "weight"];
-  const rows = [header];
+function renderCsvTable(header, rows) {
+  return [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n") + "\n";
+}
 
+// One flat findings-oriented severity vocabulary (Critical/High/Medium/Low/
+// Info) instead of every tool's own raw scale (Semgrep's ERROR/WARNING/INFO,
+// Bandit's HIGH/MEDIUM/LOW) — a spreadsheet mixing both isn't "structured
+// for a layman," it's two different codes a reader has to already know.
+const SEMGREP_SEVERITY_LABEL = { ERROR: "Critical", WARNING: "High", INFO: "Low" };
+const BANDIT_SEVERITY_LABEL = { HIGH: "Critical", MEDIUM: "Medium", LOW: "Low" };
+
+const DETECTED_BY_LABEL = {
+  semgrep: "Code Scanner",
+  bandit: "Python Security Scanner",
+  gitleaks: "Secret Scanner",
+  pip: "Dependency Checker",
+  npm: "Dependency Checker",
+  jscpd: "Duplicate Code Checker",
+};
+
+function renderCsvWorkbook({ composite, tier, technical, cognitive, intent, top, bandit, historicalSecrets, dependencyVulns, duplication }) {
+  const files = {};
+
+  // --- summary.csv — the entry point: one row per category, plain English ---
+  files["summary.csv"] = renderCsvTable(
+    ["Category", "Score (0-100)", "Risk Level", "What This Means"],
+    [
+      [
+        "Overall",
+        composite,
+        tier,
+        `The overall AI-Debt score, combining all three categories below.`,
+      ],
+      [
+        "Security & Quality",
+        technical.blendedScore,
+        riskTier(technical.blendedScore),
+        `Security holes, copy-pasted code, and unfinished work left in place. See technical-debt.csv for specifics.`,
+      ],
+      [
+        "Knowledge Risk",
+        cognitive.score,
+        riskTier(cognitive.score),
+        `What happens if the one person who understands this code leaves. See knowledge-risk.csv for specifics.`,
+      ],
+      [
+        "Missing Context",
+        intent.score,
+        riskTier(intent.score),
+        `Whether anyone wrote down why the code works the way it does. See missing-context.csv for specifics.`,
+      ],
+    ]
+  );
+
+  // --- technical-debt.csv — every security/quality finding, one plain vocabulary ---
+  const technicalRows = [];
   for (const f of top) {
-    rows.push(["semgrep", f.severity || "", f.rule || "", f.path || "", f.line ?? "", f.message || "", f.weight ?? ""]);
+    technicalRows.push([
+      SEMGREP_SEVERITY_LABEL[f.severity] || f.severity || "",
+      DETECTED_BY_LABEL.semgrep,
+      f.rule || "",
+      f.path || "",
+      f.line ?? "",
+      f.message || "",
+    ]);
   }
-
   if (bandit) {
     for (const f of bandit.top) {
-      rows.push(["bandit", f.severity || "", f.testId || "", f.file || "", f.line ?? "", f.text || "", ""]);
+      technicalRows.push([
+        BANDIT_SEVERITY_LABEL[f.severity] || f.severity || "",
+        DETECTED_BY_LABEL.bandit,
+        f.testId || "",
+        f.file || "",
+        f.line ?? "",
+        f.text || "",
+      ]);
     }
   }
-
   if (historicalSecrets) {
     for (const l of historicalSecrets.leaks) {
-      rows.push(["gitleaks", "HIGH", l.rule || "", l.file || "", l.line ?? "", `secret leaked in commit ${l.commit || "unknown"}`, ""]);
+      technicalRows.push([
+        "Critical",
+        DETECTED_BY_LABEL.gitleaks,
+        l.rule || "",
+        l.file || "",
+        l.line ?? "",
+        `A secret was committed to git history (commit ${l.commit || "unknown"}) — still recoverable even though it may be deleted now.`,
+      ]);
     }
   }
-
   if (dependencyVulns) {
     for (const p of dependencyVulns.packages) {
-      const message = `${p.name}@${p.version} (${p.ecosystem}) — ${p.vulnIds.join(", ")}${p.fixVersions.length ? ` — fix: ${p.fixVersions.join(", ")}` : ""}`;
-      rows.push([`${p.ecosystem}-audit`, "HIGH", p.vulnIds[0] || "", p.name || "", "", message, ""]);
+      technicalRows.push([
+        "High",
+        DETECTED_BY_LABEL[p.ecosystem] || "Dependency Checker",
+        p.vulnIds[0] || "",
+        p.name || "",
+        "",
+        `${p.name}@${p.version} has known security vulnerabilities (${p.vulnIds.join(", ")})${p.fixVersions.length ? ` — fix available: ${p.fixVersions.join(", ")}` : ""}.`,
+      ]);
     }
   }
-
   if (duplication) {
     for (const p of duplication.clonePairs) {
-      const message = `${p.lines} duplicated lines with ${p.secondFile}:${p.secondStart}-${p.secondEnd}`;
-      rows.push(["jscpd", "INFO", "duplicate-code", p.firstFile || "", p.firstStart ?? "", message, ""]);
+      technicalRows.push([
+        "Low",
+        DETECTED_BY_LABEL.jscpd,
+        "duplicate-code",
+        p.firstFile || "",
+        p.firstStart ?? "",
+        `${p.lines} lines duplicated from ${p.secondFile}:${p.secondStart}-${p.secondEnd} — copy-pasted rather than shared/reused code.`,
+      ]);
     }
   }
+  files["technical-debt.csv"] = renderCsvTable(["Severity", "Detected By", "Issue Type", "File", "Line", "What This Means"], technicalRows);
 
-  if (cognitive?.riskyFiles) {
-    for (const r of cognitive.riskyFiles) {
-      rows.push(["git-mine", "INFO", "single-author-file", r.file || "", "", `only ever touched by ${r.author}`, ""]);
-    }
-  }
+  // --- knowledge-risk.csv — files only one person has ever touched ---
+  const knowledgeRows = (cognitive.riskyFiles || []).map((r) => [
+    r.file || "",
+    r.author || "",
+    "If this person leaves, nobody else has touched this file — it's a single point of failure.",
+  ]);
+  files["knowledge-risk.csv"] = renderCsvTable(["File", "Only Ever Edited By", "What This Means"], knowledgeRows);
 
-  if (intent?.genericCommits) {
-    for (const c of intent.genericCommits) {
-      rows.push(["git-mine", "INFO", "generic-commit-message", "", "", `${c.hash} by ${c.author}: "${c.subject}"`, ""]);
-    }
-  }
+  // --- missing-context.csv — commits that don't explain why a change was made ---
+  const contextRows = (intent.genericCommits || []).map((c) => [
+    c.hash || "",
+    c.author || "",
+    c.subject || "",
+    `The commit message ("${c.subject}") doesn't explain why this change was made — future readers (human or AI) have to guess.`,
+  ]);
+  files["missing-context.csv"] = renderCsvTable(["Commit", "Author", "Commit Message", "What This Means"], contextRows);
 
-  return rows.map((row) => row.map(csvEscape).join(",")).join("\n") + "\n";
+  return files;
 }
 
 function renderMarkdown({ composite, tier, technical, duplication, historicalSecrets, bandit, dependencyVulns, cognitive, intent, top, repoPath, weights }) {
@@ -1006,9 +1094,14 @@ function main() {
   }
 
   if (args.csv) {
-    const csv = renderCsv({ top, bandit, historicalSecrets, dependencyVulns, duplication, cognitive, intent });
-    fs.writeFileSync(args.csv, csv);
-    console.error(`CSV written to ${args.csv}`);
+    // args.csv is a directory, not a single file — see renderCsvWorkbook's
+    // comment for why a real multi-tab .xlsx isn't what this builds.
+    fs.mkdirSync(args.csv, { recursive: true });
+    const workbook = renderCsvWorkbook({ composite, tier, technical, cognitive, intent, top, bandit, historicalSecrets, dependencyVulns, duplication });
+    for (const [filename, content] of Object.entries(workbook)) {
+      fs.writeFileSync(path.join(args.csv, filename), content);
+    }
+    console.error(`CSV workbook written to ${args.csv}/ (summary.csv, technical-debt.csv, knowledge-risk.csv, missing-context.csv)`);
   }
 
   // Non-zero exit lets CI treat "AI-debt score too high" as a failed check,

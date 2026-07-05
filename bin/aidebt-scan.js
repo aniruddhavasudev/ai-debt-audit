@@ -11,7 +11,7 @@
  *
  * Usage:
  *   aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json raw.json]
- *                              [--sarif results.sarif] [--csv findings.csv] [--fail-on-score N]
+ *                              [--sarif results.sarif] [--csv csv-dir/] [--fail-on-score N]
  *                              [--pdf report.pdf] [--history history.json] [--diff base-ref]
  *
  * By default, both a Markdown report (--out, default ./ai-debt-report.md)
@@ -20,9 +20,10 @@
  *
  * --sarif writes GitHub's native code-scanning format (upload with
  * github/codeql-action/upload-sarif to surface findings in the Security tab).
- * --csv writes every finding as one flat table (source, severity, rule,
- * file, line, message) — opens directly in Excel/Google Sheets/Numbers,
- * for anyone who wants to filter/sort findings outside a Markdown report.
+ * --csv writes a small directory of plain-language CSV files (a
+ * "workbook": summary.csv plus one sheet per debt category) instead of one
+ * flat table of rule IDs — meant to be readable by someone who isn't the
+ * one who wrote the code, not just filterable by someone who is.
  * --fail-on-score N exits non-zero if the composite score is >= N — the
  * hook a CI pipeline needs to actually block a PR, not just log a number.
  * --pdf renders the HTML report to PDF via headless Chrome/Chromium — the
@@ -449,7 +450,7 @@ function printSummaryBox(scores, outPath, htmlPath, pdfPath, history, sarifPath,
   if (pdfPath) console.log(`  ${c.dim("PDF:     ")} ${pdfPath}`);
   if (sarifPath) console.log(`  ${c.dim("SARIF:   ")} ${sarifPath}`);
   if (badgePath) console.log(`  ${c.dim("Badge:   ")} ${badgePath}`);
-  if (csvPath) console.log(`  ${c.dim("CSV:     ")} ${csvPath}`);
+  if (csvPath) console.log(`  ${c.dim("CSV:     ")} ${csvPath}/ (summary.csv + 3 category sheets)`);
   console.log(rule + "\n");
 }
 
