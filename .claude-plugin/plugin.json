@@ -1,7 +1,7 @@
 {
   "name": "ai-debt-audit",
-  "description": "Scan a repo for AI-generated technical, cognitive, and intent debt \u2014 deterministic, fully local, no LLM calls. 54 Semgrep rules plus Bandit, pip-audit, jscpd, and gitleaks.",
-  "version": "1.5.0",
+  "description": "Scan a repo for AI-generated technical, cognitive, and intent debt \u2014 deterministic, fully local, no LLM calls. 64 Semgrep rules plus Bandit, pip-audit, jscpd, and gitleaks.",
+  "version": "1.6.0",
   "author": {
     "name": "aniruddhavasudev"
   },
