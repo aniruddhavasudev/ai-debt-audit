@@ -27,6 +27,7 @@ The full, specific list of what `aidebt-scan` detects — the plain-English vers
 ✅ Team-size damping — fair to solo projects<br/>
 ✅ Commit message quality, not just "fix"<br/>
 ✅ AI-assisted commits, measured directly from commit trailers (Claude Code, GitHub Copilot, Cursor) — not inferred<br/>
+✅ "Giant dump" commits — many files or heavy line churn in one shot, measured from `git log --numstat`<br/>
 ✅ Refactor cadence vs. pure feature velocity<br/>
 ✅ Shallow-clone detection with a live warning
 

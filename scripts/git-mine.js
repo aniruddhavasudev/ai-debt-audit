@@ -179,6 +179,77 @@ function mineBusFactor(repoPath) {
   };
 }
 
+// A commit is flagged as a "giant dump" if it touches at least this many
+// files, OR churns at least this many total lines (added + deleted) —
+// either condition alone is a real risk: a huge rename/refactor touching
+// many files with modest per-file changes, or a handful of files each
+// rewritten wholesale. Provisional v1 heuristic, same status as every
+// other constant in this file — not derived from a large dataset yet.
+const GIANT_DUMP_MIN_FILES = 15;
+const GIANT_DUMP_MIN_LINES = 500;
+
+function mineCommitChurn(repoPath) {
+  // --numstat prints one "added\tdeleted\tfilename" line per file changed,
+  // immediately after each commit's own formatted header line. Binary
+  // files report "-\t-\tfilename" (no line counts), handled below by
+  // treating a non-numeric added/deleted as 0 rather than NaN-poisoning
+  // the running total.
+  const raw = git(repoPath, [
+    "log",
+    "--no-merges",
+    "--numstat",
+    "--pretty=format:__COMMIT__\x1f%h\x1f%an\x1f%s",
+  ]);
+
+  const commits = [];
+  let current = null;
+
+  for (const line of raw.split("\n")) {
+    if (line.startsWith("__COMMIT__")) {
+      if (current) commits.push(current);
+      const [, hash, author, subject] = line.split("\x1f");
+      current = { hash, author, subject, filesChanged: 0, linesAdded: 0, linesDeleted: 0 };
+      continue;
+    }
+    if (!line.trim() || !current) continue;
+    const [addedRaw, deletedRaw] = line.split("\t");
+    current.filesChanged++;
+    const added = Number(addedRaw);
+    const deleted = Number(deletedRaw);
+    if (!Number.isNaN(added)) current.linesAdded += added;
+    if (!Number.isNaN(deleted)) current.linesDeleted += deleted;
+  }
+  if (current) commits.push(current);
+
+  let giantDumpCommits = 0;
+  // Every giant-dump commit, not just the count — the actionable evidence
+  // ("here is the commit that wasn't reviewed incrementally"), matching
+  // every other list in this file.
+  const giantDumpCommitList = [];
+  for (const c of commits) {
+    const totalChurn = c.linesAdded + c.linesDeleted;
+    if (c.filesChanged >= GIANT_DUMP_MIN_FILES || totalChurn >= GIANT_DUMP_MIN_LINES) {
+      giantDumpCommits++;
+      giantDumpCommitList.push({
+        hash: c.hash,
+        author: c.author,
+        subject: c.subject,
+        filesChanged: c.filesChanged,
+        linesAdded: c.linesAdded,
+        linesDeleted: c.linesDeleted,
+      });
+    }
+  }
+
+  const totalCommits = commits.length;
+  return {
+    totalCommits,
+    giantDumpCommits,
+    giantDumpRatio: totalCommits ? giantDumpCommits / totalCommits : 0,
+    giantDumpCommitList,
+  };
+}
+
 // A shallow clone (git's own default for CI checkouts — GitHub Actions'
 // actions/checkout defaults to fetch-depth: 1, a single commit) severely
 // distorts every signal in this file: bus-factor undercounts historical
@@ -200,12 +271,14 @@ function main() {
   const repoPath = path.resolve(process.argv[2] || ".");
   const commitStats = mineCommitMessages(repoPath);
   const busFactorStats = mineBusFactor(repoPath);
+  const churnStats = mineCommitChurn(repoPath);
   const isShallowClone = isShallowRepo(repoPath);
 
   const result = {
     repoPath,
     commitStats,
     busFactorStats,
+    churnStats,
     isShallowClone,
   };
 

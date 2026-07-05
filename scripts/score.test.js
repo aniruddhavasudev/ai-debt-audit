@@ -188,30 +188,45 @@ test("scoreCognitiveDebt — a bot author (e.g. github-actions[bot]) does not co
   assert.ok(twoRealHumans.score > 0, "two real humans should partially un-damp the score");
 });
 
-test("scoreIntentDebt — no AI-assisted commits behaves exactly as the old generic-message-only formula", () => {
+test("scoreIntentDebt — a repo with zero AI-assisted commits scores byte-identical to the pre-feature formula", () => {
+  // 5 of 10 commits generic, none AI-assisted at all — must equal the old
+  // 100 * genericMessageRatio formula exactly, not a diluted fraction of it.
   const result = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0 },
+    commitStats: {
+      totalCommits: 10,
+      genericMessageRatio: 0.5,
+      genericMessageCommits: 5,
+      aiAssistedGenericRatio: 0,
+      aiAssistedGenericCommits: 0,
+    },
   });
-  // 100 * (0.5 * 0.7 + 0 * 0.3) = 35
-  assert.equal(result.score, 35);
+  assert.equal(result.score, 50, "must match 100 * genericMessageRatio exactly when the new signal is inactive");
 });
 
 test("scoreIntentDebt — disclosed AI use with well-explained commits is not penalized", () => {
-  // All commits AI-assisted, but none generic — aiAssistedGenericRatio is 0,
-  // so a transparent, well-labeled trailer shouldn't itself raise the score.
+  // All 10 commits AI-assisted, but none generic — a transparent,
+  // well-labeled trailer shouldn't itself raise the score.
   const result = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0, aiAssistedRatio: 1.0, aiAssistedGenericRatio: 0 },
+    commitStats: {
+      totalCommits: 10,
+      genericMessageRatio: 0,
+      genericMessageCommits: 0,
+      aiAssistedRatio: 1.0,
+      aiAssistedGenericRatio: 0,
+      aiAssistedGenericCommits: 0,
+    },
   });
   assert.equal(result.score, 0);
   assert.equal(result.aiAssistedRatio, 1.0);
 });
 
-test("scoreIntentDebt — AI-assisted AND generic commits compound into a higher score than either alone", () => {
+test("scoreIntentDebt — AI-assisted AND generic commits compound into a higher score than the same generic ratio alone", () => {
   const genericOnly = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0 },
+    commitStats: { totalCommits: 10, genericMessageRatio: 0.5, genericMessageCommits: 5, aiAssistedGenericCommits: 0 },
   });
+  // Same 5 generic commits, but 3 of them are also AI-assisted.
   const genericAndAiUnexplained = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0.5 },
+    commitStats: { totalCommits: 10, genericMessageRatio: 0.5, genericMessageCommits: 5, aiAssistedGenericCommits: 3 },
   });
   assert.ok(
     genericAndAiUnexplained.score > genericOnly.score,
@@ -222,9 +237,12 @@ test("scoreIntentDebt — AI-assisted AND generic commits compound into a higher
 test("scoreIntentDebt — surfaces aiToolCounts and aiAssistedCommitList unchanged for reporting", () => {
   const result = scoreIntentDebt({
     commitStats: {
+      totalCommits: 10,
       genericMessageRatio: 0,
+      genericMessageCommits: 0,
       aiAssistedRatio: 0.4,
       aiAssistedGenericRatio: 0,
+      aiAssistedGenericCommits: 0,
       aiAssistedCommits: 2,
       aiToolCounts: { "Claude Code": 2 },
       aiAssistedCommitList: [{ hash: "abc1234", author: "Dev", tool: "Claude Code", subject: "feat: x" }],
@@ -233,4 +251,41 @@ test("scoreIntentDebt — surfaces aiToolCounts and aiAssistedCommitList unchang
   assert.equal(result.aiAssistedCommits, 2);
   assert.deepEqual(result.aiToolCounts, { "Claude Code": 2 });
   assert.equal(result.aiAssistedCommitList.length, 1);
+});
+
+test("scoreCognitiveDebt — zero giant-dump commits scores byte-identical to the pre-feature formula", () => {
+  const result = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 0.5 },
+    commitStats: { authorCounts: { Alice: 5, Bob: 5, Carol: 5 } },
+    churnStats: { giantDumpRatio: 0 },
+  });
+  // dampingFactor at 3 authors is 1.0, so score should be exactly 100 * 0.5 * 1.0 = 50
+  assert.equal(result.score, 50, "must match the pre-feature bus-factor-only formula when giantDumpRatio is 0");
+});
+
+test("scoreCognitiveDebt — giant-dump commits add to the score without team-size damping", () => {
+  // Even a solo repo (dampingFactor 0, so bus factor contributes nothing)
+  // should still be pushed up by a real giant-dump-commit pattern — an
+  // unreviewed dump is risky regardless of team size.
+  const soloWithDumps = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 1.0 },
+    commitStats: { authorCounts: { "Solo Builder": 10 } },
+    churnStats: { giantDumpRatio: 0.5 },
+  });
+  assert.equal(soloWithDumps.dampingFactor, 0, "a single author should fully damp bus factor");
+  assert.ok(soloWithDumps.score > 0, "giant-dump ratio should still raise the score despite full bus-factor damping");
+});
+
+test("scoreCognitiveDebt — surfaces giantDumpCommits and giantDumpCommitList for reporting", () => {
+  const result = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 0 },
+    commitStats: { authorCounts: { Alice: 5, Bob: 5, Carol: 5 } },
+    churnStats: {
+      giantDumpRatio: 0.2,
+      giantDumpCommits: 1,
+      giantDumpCommitList: [{ hash: "abc1234", author: "Alice", subject: "feat: big change", filesChanged: 40, linesAdded: 900, linesDeleted: 10 }],
+    },
+  });
+  assert.equal(result.giantDumpCommits, 1);
+  assert.equal(result.giantDumpCommitList.length, 1);
 });

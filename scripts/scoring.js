@@ -264,12 +264,31 @@ export function teamSizeDampingFactor(totalAuthors) {
 // its maximum, even though the bot only ever touches one generated file.
 const BOT_AUTHOR_PATTERN = /\[bot\]$/i;
 
+// How much a "giant dump" commit ratio (see git-mine.js's mineCommitChurn)
+// can add to cognitive debt, on top of the bus-factor signal. Additive,
+// not proportionally blended: zero giant-dump commits must collapse this
+// to exactly the pre-feature formula (100 * busFactorRiskRatio *
+// dampingFactor) — the same "add, never dilute" lesson from the intent
+// debt fix above (a fixed proportional split silently lowered scores for
+// repos where the new signal contributed nothing).
+//
+// Deliberately NOT team-size-damped like bus factor: bus factor is damped
+// because a small team is *structurally* single-author-per-file, which
+// isn't a real signal. An unreviewed giant-dump commit is a real risk
+// regardless of team size — arguably worse in a solo repo, where nobody
+// else could have caught it in review.
+const GIANT_DUMP_BONUS_WEIGHT = 0.3;
+
 export function scoreCognitiveDebt(gitMine) {
   const busFactorRiskRatio = gitMine.busFactorStats?.busFactorRiskRatio ?? 0;
   const allAuthors = Object.keys(gitMine.commitStats?.authorCounts ?? {});
   const totalAuthors = allAuthors.filter((a) => !BOT_AUTHOR_PATTERN.test(a)).length;
   const dampingFactor = teamSizeDampingFactor(totalAuthors);
-  const score = Math.round(100 * busFactorRiskRatio * dampingFactor);
+  const giantDumpRatio = gitMine.churnStats?.giantDumpRatio ?? 0;
+
+  const score = Math.round(
+    Math.min(100, 100 * busFactorRiskRatio * dampingFactor + 100 * giantDumpRatio * GIANT_DUMP_BONUS_WEIGHT)
+  );
   return {
     score,
     busFactorRiskRatio,
@@ -277,6 +296,13 @@ export function scoreCognitiveDebt(gitMine) {
     dampingFactor,
     isShallowClone: Boolean(gitMine.isShallowClone),
     ...gitMine.busFactorStats,
+    // Measured directly from `git log --numstat` — a commit touching many
+    // files or churning many lines in one shot, the "wasn't reviewed
+    // incrementally" pattern (see git-mine.js's GIANT_DUMP_MIN_FILES/
+    // GIANT_DUMP_MIN_LINES thresholds).
+    giantDumpRatio,
+    giantDumpCommits: gitMine.churnStats?.giantDumpCommits ?? 0,
+    giantDumpCommitList: gitMine.churnStats?.giantDumpCommitList ?? [],
   };
 }
 
@@ -288,17 +314,33 @@ export function scoreCognitiveDebt(gitMine) {
 // explained why," the exact unreviewed-dump pattern this category exists
 // to surface. Weights are a v1 starting point, same provisional status as
 // every other constant in this file.
-const INTENT_SUBWEIGHTS = {
-  genericMessages: 0.7,
-  aiUnexplainedCommits: 0.3,
-};
+// A commit that's both AI-assisted and generic/uninformative counts as
+// this many "generic commits" toward the score, instead of 1 — the
+// compounding pattern this exists to catch ("AI wrote it and nobody
+// explained why") is worse than a plain generic commit, but should only
+// ever *add* to the base signal, never dilute it. With a fixed proportional
+// split (e.g. "70% generic ratio + 30% AI-unexplained ratio") instead, a
+// repo with zero AI-assisted commits would score *lower* than it did
+// before this feature existed, purely because the new signal contributes
+// nothing — caught before shipping by checking the score of a repo with
+// generic messages but no AI involvement at all against the pre-feature
+// formula.
+const AI_UNEXPLAINED_EXTRA_WEIGHT = 1.5;
 
 export function scoreIntentDebt(gitMine) {
   const genericMessageRatio = gitMine.commitStats?.genericMessageRatio ?? 0;
   const aiAssistedGenericRatio = gitMine.commitStats?.aiAssistedGenericRatio ?? 0;
-  const score = Math.round(
-    100 * (genericMessageRatio * INTENT_SUBWEIGHTS.genericMessages + aiAssistedGenericRatio * INTENT_SUBWEIGHTS.aiUnexplainedCommits)
-  );
+  const totalCommits = gitMine.commitStats?.totalCommits ?? 0;
+  const genericMessageCommits = gitMine.commitStats?.genericMessageCommits ?? 0;
+  const aiAssistedGenericCommits = gitMine.commitStats?.aiAssistedGenericCommits ?? 0;
+
+  // Zero AI-assisted-generic commits collapses this to
+  // 100 * genericMessageCommits / totalCommits — exactly the pre-feature
+  // formula (100 * genericMessageRatio), byte-for-byte.
+  const weightedGenericCount =
+    genericMessageCommits - aiAssistedGenericCommits + aiAssistedGenericCommits * AI_UNEXPLAINED_EXTRA_WEIGHT;
+  const score = totalCommits ? Math.round(Math.min(100, 100 * (weightedGenericCount / totalCommits))) : 0;
+
   return {
     score,
     genericMessageRatio,

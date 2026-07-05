@@ -85,6 +85,14 @@ export function renderMarkdown({ composite, tier, technical, duplication, histor
     }
   }
 
+  if (cognitive.giantDumpCommits > 0) {
+    lines.push(`\n### Giant-Dump Commits (measured from \`git log --numstat\`)\n`);
+    lines.push(`- ${(cognitive.giantDumpRatio * 100).toFixed(1)}% of commits (${cognitive.giantDumpCommits}) touched many files or churned many lines in one shot — the "wasn't reviewed incrementally" pattern:\n`);
+    for (const c of cognitive.giantDumpCommitList) {
+      lines.push(`  - \`${c.hash}\` ${c.author}: "${c.subject}" — ${c.filesChanged} files, +${c.linesAdded}/-${c.linesDeleted} lines`);
+    }
+  }
+
   lines.push(`\n## Intent Debt (externalized rationale)\n`);
   lines.push(`- Generic/uninformative commit messages: ${(intent.genericMessageRatio * 100).toFixed(1)}% of commits`);
   lines.push(`- Refactor-commit ratio (trend indicator, not scored): ${(intent.refactorRatio * 100).toFixed(1)}%`);

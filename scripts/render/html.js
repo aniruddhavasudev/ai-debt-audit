@@ -183,6 +183,13 @@ export function renderHtml({ composite, tier, technical, duplication, historical
       Total distinct authors: ${cognitive.totalAuthors} (team-size damping factor: ${cognitive.dampingFactor.toFixed(2)})</p>
       ${cognitive.totalAuthors <= 2 ? `<p class="dampened">⚠ Score damped heavily — with only ${cognitive.totalAuthors} total contributor(s), single-author-per-file is structural, not a debt signal.</p>` : ""}
       ${cognitive.riskyFiles?.length ? `<p><strong>Files only one person has ever touched:</strong></p><ul>${cognitive.riskyFiles.map((r) => `<li><code>${escapeHtml(r.file)}</code> (${escapeHtml(r.author)})</li>`).join("")}</ul>` : ""}
+      ${
+        cognitive.giantDumpCommits > 0
+          ? `<h3>Giant-Dump Commits (measured from git log --numstat)</h3>
+             <p>${(cognitive.giantDumpRatio * 100).toFixed(1)}% of commits (${cognitive.giantDumpCommits}) touched many files or churned many lines in one shot — the "wasn't reviewed incrementally" pattern:</p>
+             <ul>${cognitive.giantDumpCommitList.map((c) => `<li><code>${escapeHtml(c.hash)}</code> ${escapeHtml(c.author)}: "${escapeHtml(c.subject)}" — ${c.filesChanged} files, +${c.linesAdded}/-${c.linesDeleted} lines</li>`).join("")}</ul>`
+          : ""
+      }
     </div>
 
     <div class="card">

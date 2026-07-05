@@ -12,12 +12,12 @@
 | **jscpd** | Copy-paste detection |
 | **gitleaks** | Secrets anywhere in git history, not just the current snapshot — a key committed and deleted three months ago still counts |
 
-Plus [`scripts/git-mine.js`](../scripts/git-mine.js), a custom script mining `git log` for what none of the above can see: bus factor, generic commit messages, whether refactoring is happening or just piling up, and which commits carry a known AI coding tool's own signature (Claude Code, GitHub Copilot, Cursor) — measured directly from commit trailers, not inferred from code patterns like everything else here.
+Plus [`scripts/git-mine.js`](../scripts/git-mine.js), a custom script mining `git log` for what none of the above can see: bus factor, generic commit messages, whether refactoring is happening or just piling up, which commits carry a known AI coding tool's own signature (Claude Code, GitHub Copilot, Cursor) — measured directly from commit trailers, not inferred from code patterns like everything else here — and which commits touched many files or churned many lines in one shot (`git log --numstat`), the "wasn't reviewed incrementally" pattern.
 
 ## How the score is composed
 
 - **Technical debt (50%)** — Semgrep (35%), Bandit (15%), duplication (15%), historical secrets (20%), dependency vulns (15%)
-- **Cognitive debt (25%)** — bus factor from real git history (bot authors excluded)
-- **Intent debt (25%)** — generic/uninformative commit messages (70%) blended with AI-assisted commits that are *also* generic (30%) — a disclosed AI-assisted commit with a real explanation isn't penalized; one with neither is the unreviewed-dump pattern this exists to catch. Refactor cadence is reported as a trend indicator but not currently scored.
+- **Cognitive debt (25%)** — bus factor from real git history (bot authors excluded), plus an additive bonus for "giant dump" commits (≥15 files or ≥500 lines churned in one commit) — a real risk regardless of team size, so unlike bus factor it isn't damped for small teams. A repo with zero giant-dump commits scores exactly as it would have before this signal existed.
+- **Intent debt (25%)** — generic/uninformative commit messages, weighted 1.5x if that commit is also AI-assisted — a disclosed AI-assisted commit with a real explanation isn't penalized; one with neither is the unreviewed-dump pattern this exists to catch, and a repo with zero AI-assisted commits scores exactly as it would have before this signal existed. Refactor cadence is reported as a trend indicator but not currently scored.
 
 Every constant above is a v1 heuristic, not yet calibrated against a large repo sample — see [CALIBRATION.md](../CALIBRATION.md) for the real findings so far.
