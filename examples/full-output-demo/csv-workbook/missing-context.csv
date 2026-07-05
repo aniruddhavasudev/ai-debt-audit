@@ -1,4 +1,0 @@
-Commit,Author,Commit Message,What This Means
-7fb3e88,Solo Builder,update,"The commit message (""update"") doesn't explain why this change was made — future readers (human or AI) have to guess."
-0933525,Solo Builder,fix,"The commit message (""fix"") doesn't explain why this change was made — future readers (human or AI) have to guess."
-f44bc42,Solo Builder,wip,"The commit message (""wip"") doesn't explain why this change was made — future readers (human or AI) have to guess."
