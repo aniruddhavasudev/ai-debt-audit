@@ -25,7 +25,7 @@ const GENERIC_MSG_RE = /^(fix|update|updates|wip|changes|misc|stuff|minor|typo|t
 // user's behalf. Not exhaustive: this is the starting, provisional list of
 // tools this project has directly observed signing commits, not a claim of
 // full market coverage. Add a new { tool, pattern } entry for any other
-// tool's real signature as it's confirmed — see CONTRIBUTING.md.
+// tool's real signature as it's confirmed — PRs welcome.
 const AI_AUTHORSHIP_SIGNATURES = [
   // Claude Code's default trailer is "Co-Authored-By: Claude <noreply@anthropic.com>"
   // (the display name varies by model — "Claude", "Claude Sonnet 5", "Claude
