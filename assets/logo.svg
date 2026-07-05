@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="96" fill="#1e1e1e"/>
+
+  <!-- Score gauge arc, echoing the report's own score circle -->
+  <circle cx="100" cy="100" r="72" fill="none" stroke="#33383f" stroke-width="14"/>
+  <circle cx="100" cy="100" r="72" fill="none" stroke="#ea580c" stroke-width="14"
+          stroke-linecap="round"
+          stroke-dasharray="325 452"
+          transform="rotate(-90 100 100)"/>
+
+  <!-- Magnifying glass, centered -->
+  <g transform="translate(100,100)">
+    <circle cx="-8" cy="-8" r="26" fill="none" stroke="#f5f5f5" stroke-width="9"/>
+    <line x1="12" y1="12" x2="34" y2="34" stroke="#f5f5f5" stroke-width="10" stroke-linecap="round"/>
+  </g>
+</svg>

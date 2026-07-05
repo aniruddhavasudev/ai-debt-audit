@@ -1,18 +1,47 @@
-# ai-debt-audit
+<div align="center">
+  <img src="assets/logo.svg" width="120" height="120" alt="ai-debt-audit logo">
 
-[![CI](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
-![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
-![PRs welcome](https://img.shields.io/badge/PRs-welcome-blueviolet)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
-[![AI-Debt Score](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json)](https://github.com/aniruddhavasudev/ai-debt-audit/blob/main/examples/sample-report.md)
+  # ai-debt-audit
 
-That last badge is this repo scanning itself, on a schedule (see [`.github/workflows/self-scan.yml`](.github/workflows/self-scan.yml)) — it's a live number, not a claim.
+  **Measure comprehension debt in AI-generated code.**
 
-**Measure comprehension debt in AI-generated code.**
+  [![CI](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
+  ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+  ![PRs welcome](https://img.shields.io/badge/PRs-welcome-blueviolet)
+  [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+  [![AI-Debt Score](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json)](https://github.com/aniruddhavasudev/ai-debt-audit/blob/main/examples/sample-report.md)
+
+  *That last badge is this repo scanning itself, on a schedule — a live number, not a claim.*
+</div>
+
+---
 
 A repo scanner for the specific mess that AI coding assistants leave behind: disabled RLS policies, auth checks that only exist in the happy path, `debug=True` still on, secrets copy-pasted from a tutorial, and the quieter stuff — one person owning half the codebase, commits that just say "fix," nobody writing down why anything is the way it is.
 
 Point it at a repo, it runs six tools, you get one score and a full breakdown. Takes a few seconds. Fully local — nothing calls an LLM, nothing leaves your machine.
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🔧 Technical debt
+The code itself — security holes, duplicated logic, unfinished stubs. Caught by 54 custom Semgrep rules plus Bandit, pip-audit, and jscpd.
+
+</td>
+<td width="33%" valign="top">
+
+### 🧠 Cognitive debt
+Knowledge concentration — what happens if the one person who understands this leaves. Measured from real git history, not a guess.
+
+</td>
+<td width="33%" valign="top">
+
+### 📝 Intent debt
+Whether anyone wrote down *why*, so the next engineer (or the next AI agent) doesn't have to guess. Proxied from commit quality and refactor cadence.
+
+</td>
+</tr>
+</table>
 
 ![demo](assets/demo-terminal.svg)
 
