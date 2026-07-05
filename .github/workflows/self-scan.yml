@@ -1,0 +1,64 @@
+name: Self-Scan Badge
+
+# Scans this repo with its own tool and commits the resulting badge JSON —
+# genuine dogfooding, and the badge in the README is a live number, not a
+# static claim. Runs on push to main (so the badge tracks reality) and on
+# a weekly schedule (so the number moves even if nobody pushes for a
+# while, e.g. as dependency CVEs get published).
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  self-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install scanning tools
+        run: |
+          pip install --quiet semgrep bandit pip-audit
+          set -euo pipefail
+          VERSION=$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4 | sed 's/^v//')
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | sudo tar -xz -C /usr/local/bin gitleaks
+          sudo chmod +x /usr/local/bin/gitleaks
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Scan this repo, excluding test-fixtures (deliberately not representative of this project's own debt)
+        run: |
+          cat > /tmp/self-scan-config.json << 'EOF'
+          { "excludePaths": ["test-fixtures/**"] }
+          EOF
+          cp /tmp/self-scan-config.json .aidebtrc.json
+          node bin/aidebt-scan.js . --badge badge.json --out /tmp/self-scan-report.md
+          rm .aidebtrc.json
+
+      - name: Commit the updated badge if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- badge.json; then
+            git add badge.json
+            git commit -m "chore: update self-scan AI-debt badge [skip ci]"
+            git push
+          else
+            echo "Badge unchanged, nothing to commit."
+          fi

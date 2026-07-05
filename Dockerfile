@@ -7,6 +7,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 python3-pip python3-venv git curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Modern git refuses to operate on a repo owned by a different user than
+# the process running it ("detected dubious ownership"). This container
+# always runs as root, but the mounted /repo volume is owned by whatever
+# user owns it on the host — almost never root on a real CI runner (it
+# silently worked in local testing only because that was root-on-root on
+# both sides, which hid this entirely — caught by an actual GitHub Actions
+# run, not local testing). Trusting any mounted directory is the right
+# call here specifically because this container's only job is scanning
+# whatever repo gets mounted into it.
+RUN git config --system --add safe.directory '*'
+
 # Debian's system Python is externally managed (PEP 668) — a venv keeps
 # this contained instead of fighting pip with --break-system-packages.
 RUN python3 -m venv /opt/aidebt-venv

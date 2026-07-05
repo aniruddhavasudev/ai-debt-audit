@@ -371,7 +371,7 @@ function runPdfExport(htmlPath, pdfPath) {
   return fileExists(pdfPath) ? pdfPath : null;
 }
 
-function printSummaryBox(scores, outPath, htmlPath, pdfPath, history) {
+function printSummaryBox(scores, outPath, htmlPath, pdfPath, history, sarifPath, badgePath) {
   const { composite, tier, technical, cognitive, intent, weights } = scores;
   // Fall back to the historical 50/25/25 default only if an older score.js
   // (pre-config-support) produced this JSON without a weights field.
@@ -416,6 +416,8 @@ function printSummaryBox(scores, outPath, htmlPath, pdfPath, history) {
   console.log(`  ${c.dim("Markdown:")} ${outPath}`);
   if (htmlPath) console.log(`  ${c.dim("HTML:    ")} ${htmlPath}`);
   if (pdfPath) console.log(`  ${c.dim("PDF:     ")} ${pdfPath}`);
+  if (sarifPath) console.log(`  ${c.dim("SARIF:   ")} ${sarifPath}`);
+  if (badgePath) console.log(`  ${c.dim("Badge:   ")} ${badgePath}`);
   console.log(rule + "\n");
 }
 
@@ -468,6 +470,7 @@ function main() {
   scoreArgs.push("--out", outPath, "--json", rawJsonPath);
   if (htmlPath) scoreArgs.push("--html", htmlPath);
   if (args.sarif) scoreArgs.push("--sarif", path.resolve(args.sarif));
+  if (args.badge) scoreArgs.push("--badge", path.resolve(args.badge));
   if (args["fail-on-score"] !== undefined) scoreArgs.push("--fail-on-score", args["fail-on-score"]);
   if (changedFiles) scoreArgs.push("--files-scanned", String(changedFiles.length));
 
@@ -499,7 +502,7 @@ function main() {
     history = recordHistory(historyPath, targetPath, scores);
   }
 
-  printSummaryBox(scores, outPath, htmlPath, pdfPath, history);
+  printSummaryBox(scores, outPath, htmlPath, pdfPath, history, args.sarif ? path.resolve(args.sarif) : null, args.badge ? path.resolve(args.badge) : null);
 
   // Propagate score.js's exit code — this is how --fail-on-score reaches
   // a CI system: a real non-zero exit, not just text in a log.
