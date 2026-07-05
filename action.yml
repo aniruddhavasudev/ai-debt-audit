@@ -12,7 +12,7 @@
 #     with:
 #       fetch-depth: 0
 name: 'AI-Debt Audit'
-description: 'Scan a repo for AI-generated technical, cognitive, and intent debt. Deterministic, fully local — no LLM calls, nothing leaves the runner.'
+description: 'Scan a repo for AI-generated technical, cognitive, and intent debt — deterministic, fully local, no LLM calls.'
 author: 'aniruddhavasudev'
 branding:
   icon: 'search'
