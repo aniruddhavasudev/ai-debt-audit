@@ -17,6 +17,7 @@ Semgrep scans every `.yml` in this directory automatically — no need to refere
 - `04-react-node-smells.yml` — React/Next.js-specific misuse (hooks, re-renders, `any` types)
 - `05-supabase-smells.yml` — disabled RLS, permissive policies, service-role key exposure, unvalidated webhooks
 - `06-django-flask-smells.yml` — `DEBUG=True`, CSRF/CORS misconfiguration, SSTI, insecure deserialization
+- `07-rails-smells.yml` — mass assignment (`params.permit!`, raw `params[...]`), `.html_safe`/`raw()` XSS, SQL string interpolation, `Marshal.load`, dangerous `send`
 
 ## Extending the rule set
 

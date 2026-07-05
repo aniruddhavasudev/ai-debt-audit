@@ -62,6 +62,16 @@ const EXPECTED_RULE_IDS = [
   "ai-debt-flask-cors-wildcard",
   "ai-debt-insecure-pickle-loads",
   "ai-debt-flask-route-missing-login-required",
+  "ai-debt-rails-mass-assignment-permit-bang",
+  "ai-debt-rails-csrf-protection-skipped",
+  "ai-debt-rails-html-safe-on-input",
+  "ai-debt-rails-sql-string-interpolation",
+  "ai-debt-rails-mass-assignment-raw-params",
+  "ai-debt-rails-open-redirect",
+  "ai-debt-rails-dangerous-send",
+  "ai-debt-rails-insecure-marshal-load",
+  "ai-debt-rails-hardcoded-secret-key-base",
+  "ai-debt-rails-cors-wildcard",
 ];
 
 function main() {

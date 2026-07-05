@@ -1,0 +1,156 @@
+rules:
+  - id: ai-debt-rails-mass-assignment-permit-bang
+    languages: [ruby]
+    severity: ERROR
+    message: >
+      `params.permit!` allows every attribute through with no whitelist —
+      the mass-assignment equivalent of AllowAny. Common AI shortcut when
+      strong-parameters errors get in the way of "just making the form
+      work," and it stays in place long after the prototype phase.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: params.permit!
+
+  - id: ai-debt-rails-csrf-protection-skipped
+    languages: [ruby]
+    severity: ERROR
+    message: >
+      `skip_before_action :verify_authenticity_token` disables CSRF
+      protection for a controller. AI assistants reach for this to silence
+      a 422 during quick API testing, and it's rarely re-enabled once the
+      immediate error goes away.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    pattern-either:
+      - pattern: skip_before_action :verify_authenticity_token
+      - pattern: skip_before_action :verify_authenticity_token, ...
+
+  - id: ai-debt-rails-html-safe-on-input
+    languages: [ruby]
+    severity: ERROR
+    message: >
+      `.html_safe` (or `raw()`) called on a value that isn't a hardcoded
+      string — this disables Rails' automatic HTML escaping and is a
+      direct XSS primitive if the value includes any user input. AI
+      assistants reach for this to "fix" an escaping error they don't
+      understand, rather than sanitizing the actual input.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: $VAR.html_safe
+          - pattern: raw($VAR)
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: "^(?!['\"]).*$"
+
+  - id: ai-debt-rails-sql-string-interpolation
+    languages: [ruby]
+    severity: ERROR
+    message: >
+      SQL built via string interpolation in `where`/`find_by_sql` instead
+      of parameterized placeholders (`?` or named binds). Same failure
+      mode as raw cursor.execute() in Python — AI-generated CRUD code that
+      "looks correct" until a value contains a quote.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: $MODEL.where("...#{$X}...")
+          - pattern: $MODEL.find_by_sql("...#{$X}...")
+
+  - id: ai-debt-rails-mass-assignment-raw-params
+    languages: [ruby]
+    severity: ERROR
+    message: >
+      Model instantiated directly from `params[...]` without going through
+      strong parameters (`.permit`). AI-generated controllers frequently
+      skip strong params entirely when the strong-parameters error is
+      easier to silence than to fix properly.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: $MODEL.new(params[$KEY])
+          - pattern: $MODEL.create(params[$KEY])
+          - pattern: $MODEL.update(params[$KEY])
+
+  - id: ai-debt-rails-open-redirect
+    languages: [ruby]
+    severity: WARNING
+    message: >
+      `redirect_to` given a raw, unvalidated params value — a classic open
+      redirect. AI-generated "redirect back to where you came from" logic
+      often takes the target straight from the request without checking
+      it's actually an internal path.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    pattern-either:
+      - pattern: redirect_to params[$KEY]
+      - pattern: redirect_to(params[$KEY])
+
+  - id: ai-debt-rails-dangerous-send
+    languages: [ruby]
+    severity: ERROR
+    message: >
+      `send`/`public_send` invoked with a value derived from user input —
+      lets an attacker call arbitrary methods on the object. AI assistants
+      reach for `send` as a generic "call this dynamically named method"
+      solution without considering that the name itself might be
+      attacker-controlled.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: $OBJ.send(params[$KEY])
+          - pattern: $OBJ.public_send(params[$KEY])
+
+  - id: ai-debt-rails-insecure-marshal-load
+    languages: [ruby]
+    severity: ERROR
+    message: >
+      `Marshal.load` on data that may originate outside the process
+      (session, cache, cookie, request body) — Ruby's equivalent of
+      Python's `pickle.loads`, and just as much a direct remote-code-
+      execution primitive on attacker-controlled bytes.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: Marshal.load(...)
+
+  - id: ai-debt-rails-hardcoded-secret-key-base
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Rails `secret_key_base` hardcoded as a literal instead of loaded from
+      credentials/environment. Compromises session and cookie signing for
+      the entire application if the source ever leaks.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*secrets.yml"
+        - "*.rb"
+    pattern-regex: "secret_key_base:?\\s*[:=]?\\s*['\"]?[A-Za-z0-9]{20,}['\"]?"
+
+  - id: ai-debt-rails-cors-wildcard
+    languages: [ruby]
+    severity: WARNING
+    message: >
+      Rack::CORS (or rails-cors) configured with a wildcard origin. Common
+      AI shortcut to silence a browser CORS error during development; if
+      this is an authenticated API, wildcard origins undermine
+      cookie/credential protections the same way as the Flask/Express
+      equivalent.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    pattern: origins "*"

@@ -28,7 +28,7 @@ I built it deterministic on purpose. Every finding traces back to a specific rul
 
 | Tool | What it's for |
 |---|---|
-| Semgrep, 44 custom rules | The AI-specific stuff: disabled Supabase RLS, Flask SSTI via `render_template_string`, Django `DEBUG=True`, swallowed exceptions, `NotImplementedError` stubs that made it to main |
+| Semgrep, 54 custom rules | The AI-specific stuff: disabled Supabase RLS, Flask SSTI via `render_template_string`, Django `DEBUG=True`, Rails mass-assignment via `params.permit!`, swallowed exceptions, `NotImplementedError` stubs that made it to main |
 | Semgrep's own `p/django` + `p/flask` packs | Didn't want to hand-write every Django/Flask rule when Semgrep's community registry already covers XSS and mass-assignment better than I would |
 | Bandit | Python security linting — hardcoded passwords, `pickle.loads`, that kind of thing |
 | pip-audit | Checks your actual pinned dependency versions against known CVEs |
