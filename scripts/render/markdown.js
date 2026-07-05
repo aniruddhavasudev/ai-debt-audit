@@ -11,16 +11,21 @@ export function renderMarkdown({ composite, tier, technical, duplication, histor
   lines.push(`| Cognitive debt | ${cognitive.score}/100 | ${Math.round(weights.cognitive * 100)}% |`);
   lines.push(`| Intent debt | ${intent.score}/100 | ${Math.round(weights.intent * 100)}% |`);
 
-  lines.push(`\n## Technical Debt — ${technical.totalFindings} Semgrep findings\n`);
-  lines.push(`Blended from Semgrep, Bandit, duplication, historical secrets, and dependency vulnerabilities (only tools that actually ran contribute; see methodology note):\n`);
-  for (const [category, stats] of Object.entries(technical.byCategory)) {
-    lines.push(`- **${category}**: ${stats.count} findings (weighted ${stats.weight})`);
-  }
+  if (technical.skipped) {
+    lines.push(`\n## Technical Debt — Semgrep not installed, pattern rules skipped\n`);
+    lines.push(`*The 74 AI-debt Semgrep rules did not run (\`pip install semgrep\` for the full scan). The technical score below blends only the tools that did run.*`);
+  } else {
+    lines.push(`\n## Technical Debt — ${technical.totalFindings} Semgrep findings\n`);
+    lines.push(`Blended from Semgrep, Bandit, duplication, historical secrets, and dependency vulnerabilities (only tools that actually ran contribute; see methodology note):\n`);
+    for (const [category, stats] of Object.entries(technical.byCategory)) {
+      lines.push(`- **${category}**: ${stats.count} findings (weighted ${stats.weight})`);
+    }
 
-  lines.push(`\n### All findings (sorted by severity weight)\n`);
-  for (const f of top) {
-    lines.push(`- [${f.severity}] \`${f.rule}\` — ${f.path}:${f.line} — ${f.message}`);
-    if (f.dampenedReason) lines.push(`  - ⚠ *${f.dampenedReason}*`);
+    lines.push(`\n### All findings (sorted by severity weight)\n`);
+    for (const f of top) {
+      lines.push(`- [${f.severity}] \`${f.rule}\` — ${f.path}:${f.line} — ${f.message}`);
+      if (f.dampenedReason) lines.push(`  - ⚠ *${f.dampenedReason}*`);
+    }
   }
 
   if (bandit) {

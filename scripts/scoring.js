@@ -235,13 +235,18 @@ export function combineTechnicalDebt(semgrepScore, duplication, historicalSecret
   // by averaging in a phantom zero. This also means a non-Python repo
   // (no bandit/pip-audit findings possible) is scored fairly on the tools
   // that actually apply to it, rather than penalized for a stack mismatch.
-  const parts = [{ score: semgrepScore, weight: TECHNICAL_SUBWEIGHTS.semgrep }];
+  // Semgrep itself is now optional too (null = didn't run) — the npx
+  // quick-start path runs with zero external tools installed and scores
+  // from whatever did run, rather than refusing to work at all.
+  const parts = [];
+  if (semgrepScore !== null && semgrepScore !== undefined) parts.push({ score: semgrepScore, weight: TECHNICAL_SUBWEIGHTS.semgrep });
   if (duplication) parts.push({ score: duplication.score, weight: TECHNICAL_SUBWEIGHTS.duplication });
   if (historicalSecrets) parts.push({ score: historicalSecrets.score, weight: TECHNICAL_SUBWEIGHTS.historicalSecrets });
   if (bandit) parts.push({ score: bandit.score, weight: TECHNICAL_SUBWEIGHTS.bandit });
   if (dependencyVulns) parts.push({ score: dependencyVulns.score, weight: TECHNICAL_SUBWEIGHTS.dependencyVulns });
 
   const totalWeight = parts.reduce((sum, p) => sum + p.weight, 0);
+  if (totalWeight === 0) return 0; // nothing ran at all — no signal, not NaN
   const blended = parts.reduce((sum, p) => sum + p.score * p.weight, 0) / totalWeight;
 
   return Math.round(blended);

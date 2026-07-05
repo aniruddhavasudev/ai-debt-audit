@@ -105,6 +105,10 @@ function step(label, fn) {
 const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask", "p/golang", "p/java"];
 
 function runSemgrep(targetPath, outPath, changedFiles) {
+  if (!binExists("semgrep")) {
+    console.error(c.yellow("  semgrep not found — the 74 AI-debt pattern rules will be skipped (pip install semgrep for the full scan)"));
+    return null;
+  }
   const configArgs = [RULES_DIR, ...SEMGREP_REGISTRY_PACKS].flatMap((cfg) => ["--config", cfg]);
   const scanTargets = changedFiles && changedFiles.length > 0 ? changedFiles : [targetPath];
   try {
@@ -374,14 +378,20 @@ function main() {
   const pipAuditOut = step("pip-audit (dependency vulnerabilities)", () => runPipAudit(targetPath, path.join(workDir, "pip-audit.json")));
   const npmAuditOut = step("npm audit (dependency vulnerabilities)", () => runNpmAudit(targetPath, path.join(workDir, "npm-audit.json")));
 
-  if (!semgrepOut || !gitmineOut) {
+  if (!gitmineOut) {
     console.error(
-      c.red("\nCannot produce a score without Semgrep and git-mine results — both are required inputs, not optional enrichments.")
+      c.red("\nCannot produce a score without git-mine results — the target must be a git repository with at least one commit.")
     );
     process.exit(1);
   }
+  if (!semgrepOut) {
+    console.error(
+      c.yellow("\n  Partial scan: Semgrep didn't run, so the AI-debt pattern rules are skipped and the\n  technical score blends only the tools that did run. Install semgrep for the full scan.")
+    );
+  }
 
-  const scoreArgs = [SCORE_SCRIPT, "--semgrep", semgrepOut, "--gitmine", gitmineOut];
+  const scoreArgs = [SCORE_SCRIPT, "--gitmine", gitmineOut];
+  if (semgrepOut) scoreArgs.push("--semgrep", semgrepOut);
   if (jscpdOut) scoreArgs.push("--jscpd", jscpdOut);
   if (gitleaksOut) scoreArgs.push("--gitleaks", gitleaksOut);
   if (banditOut) scoreArgs.push("--bandit", banditOut);

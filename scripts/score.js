@@ -43,7 +43,7 @@ function loadJson(filePath) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.semgrep || !args.gitmine) {
+  if (!args.gitmine) {
     console.error(
       "Usage: node score.js --semgrep semgrep.json --gitmine gitmine.json " +
         "[--jscpd jscpd-report.json] [--gitleaks gitleaks.json] [--bandit bandit.json] " +
@@ -53,7 +53,11 @@ function main() {
     process.exit(1);
   }
 
-  let semgrepResults = loadJson(args.semgrep);
+  // Semgrep is optional (the npx zero-install path) — an empty result set
+  // with semgrepRan=false is scored as "didn't run" (weight redistributed),
+  // never as "ran and found nothing."
+  const semgrepRan = Boolean(args.semgrep);
+  let semgrepResults = semgrepRan ? loadJson(args.semgrep) : { results: [] };
   const gitMine = loadJson(args.gitmine);
   const jscpdResults = args.jscpd ? loadJson(args.jscpd) : null;
   const gitleaksResults = args.gitleaks ? loadJson(args.gitleaks) : null;
@@ -98,12 +102,14 @@ function main() {
     ? Number(args["files-scanned"])
     : gitMine.busFactorStats?.totalFilesTracked || 1;
 
-  const semgrepTechnical = scoreTechnicalDebt(semgrepResults, totalFilesScanned);
+  const semgrepTechnical = semgrepRan
+    ? scoreTechnicalDebt(semgrepResults, totalFilesScanned)
+    : { score: null, byCategory: {}, totalFindings: 0, totalWeight: 0, skipped: true };
   const duplication = scoreDuplication(jscpdResults);
   const historicalSecrets = scoreHistoricalSecrets(gitleaksResults);
   const bandit = scoreBandit(banditResults, totalFilesScanned);
   const dependencyVulns = scoreDependencyVulnerabilities(pipAuditResults, npmAuditResults);
-  const blendedScore = combineTechnicalDebt(semgrepTechnical.score, duplication, historicalSecrets, bandit, dependencyVulns);
+  const blendedScore = combineTechnicalDebt(semgrepRan ? semgrepTechnical.score : null, duplication, historicalSecrets, bandit, dependencyVulns);
   const technical = { ...semgrepTechnical, blendedScore };
 
   const cognitive = scoreCognitiveDebt(gitMine);

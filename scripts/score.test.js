@@ -315,3 +315,15 @@ test("parseArgs — a trailing bare flag is undefined, not a crash", () => {
   assert.equal(args.json, undefined);
   assert.deepEqual(args._, ["repo"]);
 });
+
+test("combineTechnicalDebt — null semgrep (not installed) redistributes its weight, no phantom zero", () => {
+  // Secrets score of 50 with everything else clean should stay meaningful
+  // when semgrep didn't run — not be diluted by a fabricated semgrep zero.
+  const withoutSemgrep = combineTechnicalDebt(null, { score: 0 }, { score: 50 }, { score: 0 }, { score: 0 });
+  const withSemgrepZero = combineTechnicalDebt(0, { score: 0 }, { score: 50 }, { score: 0 }, { score: 0 });
+  assert.ok(withoutSemgrep > withSemgrepZero, "skipping semgrep must weigh remaining tools higher than semgrep-ran-clean");
+});
+
+test("combineTechnicalDebt — nothing ran at all returns 0, not NaN", () => {
+  assert.equal(combineTechnicalDebt(null, null, null, null, null), 0);
+});
