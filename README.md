@@ -11,6 +11,7 @@
 
 <p>
 <a href="#-quick-start"><img src="https://img.shields.io/badge/-Quick_Start-1e90ff?style=for-the-badge" /></a>
+<a href="#-features"><img src="https://img.shields.io/badge/-Features-9b59b6?style=for-the-badge" /></a>
 <a href="#-what-it-catches"><img src="https://img.shields.io/badge/-What_It_Catches-2ea44f?style=for-the-badge" /></a>
 <a href="docs/TOOLS.md"><img src="https://img.shields.io/badge/-The_7_Tools-16a085?style=for-the-badge" /></a>
 <a href="docs/USAGE.md"><img src="https://img.shields.io/badge/-Full_Usage-ff6b6b?style=for-the-badge" /></a>
@@ -87,6 +88,23 @@ In plain terms: things like exposed data, security shortcuts, secrets accidental
 Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects.
 
 **→ See the full, specific list of every check: [docs/WHAT_IT_CATCHES.md](docs/WHAT_IT_CATCHES.md)**
+
+<br>
+
+## ✨ Features
+
+- **One composite 0-100 score**, blended from technical, cognitive, and intent debt — same scale every time, so two repos (or the same repo over time) are directly comparable
+- **74 custom Semgrep rules** for AI-specific failure patterns (disabled RLS, SSTI, mass assignment, missing auth checks, stub code left in main) across Python, Ruby, JavaScript/TypeScript, Go, and Java, layered on top of Bandit, pip-audit, npm audit, jscpd, and gitleaks
+- **Measured AI-assisted commit detection** — reads real Co-Authored-By trailers (Claude Code, GitHub Copilot, Cursor) directly from git history to report what fraction of commits were AI-assisted, instead of only inferring AI involvement from code patterns
+- **Historical secret scanning** via gitleaks — catches a credential committed and later deleted, which a snapshot-only scanner never sees
+- **Bus-factor / knowledge-concentration tracking** from real git history, with bot commits excluded and a team-size damping factor so small teams aren't penalized for being small
+- **Four report formats by default, no flags needed** — Markdown, standalone HTML, a plain-language CSV workbook, and a client-deliverable PDF
+- **`--diff <ref>` mode** — scores only what changed vs. a base branch/commit, answering "did this PR add debt" instead of re-scanning everything
+- **`--history` tracking** — appends each scan to a local JSON log and shows the trend (improving/worsening) between runs
+- **SARIF export + a GitHub Action** — upload findings straight to GitHub's Security tab and gate PRs with `--fail-on-score`
+- **`.aidebtrc.json` config** — override category weights, ignore specific rules, or exclude paths per target repo
+- **A Claude Code plugin** — ask Claude to run a real scan (not describe one) from inside a conversation
+- **100% local** — every tool runs on your machine; no code or findings are ever sent to an LLM or third-party service
 
 <br>
 

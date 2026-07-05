@@ -34,6 +34,13 @@ Every rule should trace to a *specific, observed AI failure mode* — not a gene
 3. Add the rule ID to `EXPECTED_RULE_IDS` in `scripts/test-rules.js` so CI catches future regressions the way it caught [a real bug](https://github.com/aniruddhavasudev/ai-debt-audit/commit/05b3430) during development (a rule that excluded test-fixture paths from the hardcoded-secret check, defeating its own purpose).
 4. Run `semgrep --validate --config rules/` and `node scripts/test-rules.js` before opening the PR.
 
+## Adding an AI coding tool's commit signature
+
+`scripts/git-mine.js`'s `AI_AUTHORSHIP_SIGNATURES` list is what detects "X% of commits were AI-assisted" — a real Co-Authored-By trailer (or, for Claude Code, its commit-message footer), not an inference. It's a deliberately small, provisional list of tools this project has directly confirmed the exact signature for — not a claim of full market coverage. If you can confirm another tool's real trailer format:
+1. Add a `{ tool, pattern }` entry to `AI_AUTHORSHIP_SIGNATURES` in `scripts/git-mine.js`.
+2. Add a real commit to a scratch repo reproducing that exact trailer and confirm `node scripts/git-mine.js <path>` detects it — don't guess at a format you haven't actually seen a tool produce.
+3. Run `node --test scripts/score.test.js` before opening the PR — `scoreIntentDebt`'s tests assert the detected ratio only affects the score when combined with a generic/uninformative message, not on its own (a disclosed, well-explained AI-assisted commit is transparency, not debt).
+
 ## Good first issues (not yet filed as GitHub issues — pick one, or ping me and I'll file it properly with a label)
 
 - **`--diff` mode for jscpd** — duplication currently always scans the whole repo even in `--diff` mode; scoping it to compare changed files against the rest of the codebase (not just against each other) would make CI runs faster without losing signal.

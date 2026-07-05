@@ -20,6 +20,32 @@ import path from "node:path";
 const REFACTOR_RE = /\b(refactor|cleanup|clean up|simplify|restructure|reorgani[sz]e)\b/i;
 const GENERIC_MSG_RE = /^(fix|update|updates|wip|changes|misc|stuff|minor|typo|test|tmp|temp|asdf|x+|\.+)$/i;
 
+// Known AI coding-tool commit signatures — the trailers (or, for Claude
+// Code, the footer line) these tools actually stamp on commits made on a
+// user's behalf. Not exhaustive: this is the starting, provisional list of
+// tools this project has directly observed signing commits, not a claim of
+// full market coverage. Add a new { tool, pattern } entry for any other
+// tool's real signature as it's confirmed — see CONTRIBUTING.md.
+const AI_AUTHORSHIP_SIGNATURES = [
+  // Claude Code's default trailer is "Co-Authored-By: Claude <noreply@anthropic.com>"
+  // (the display name varies by model — "Claude", "Claude Sonnet 5", "Claude
+  // Opus", etc. — so this matches on the @anthropic.com email, not the name).
+  { tool: "Claude Code", pattern: /co-authored-by:[^\n]*<[^>]*@anthropic\.com>/i },
+  // Claude Code also appends this footer line to commits it generates.
+  { tool: "Claude Code", pattern: /generated with \[claude code\]/i },
+  // GitHub Copilot's coding-agent (workspace) commits.
+  { tool: "GitHub Copilot", pattern: /co-authored-by:[^\n]*copilot[^\n]*<[^>]*>/i },
+  // Cursor's background-agent commits.
+  { tool: "Cursor", pattern: /co-authored-by:[^\n]*<[^>]*@cursor\.(sh|com|ai)>/i },
+];
+
+function detectAiTool(commitBody) {
+  for (const { tool, pattern } of AI_AUTHORSHIP_SIGNATURES) {
+    if (pattern.test(commitBody)) return tool;
+  }
+  return null;
+}
+
 function git(repoPath, args) {
   return execFileSync("git", ["-C", repoPath, ...args], {
     encoding: "utf8",
@@ -28,36 +54,80 @@ function git(repoPath, args) {
 }
 
 function mineCommitMessages(repoPath) {
-  // %x1f is a field separator that will never appear in a commit subject
-  const raw = git(repoPath, ["log", "--no-merges", "--pretty=format:%h%x1f%an%x1f%s"]);
-  const lines = raw.split("\n").filter(Boolean);
+  // \x1f separates fields within one commit's record; \x1e separates
+  // records from each other. %B (the full raw body — subject, blank line,
+  // body, and trailers) is needed rather than just %s (subject) because
+  // AI tools stamp their Co-Authored-By trailer in the body, below the
+  // subject line — %s alone would never see it.
+  const raw = git(repoPath, ["log", "--no-merges", "--pretty=format:%h\x1f%an\x1f%B\x1e"]);
+  // Git inserts its own newline after every formatted entry regardless of
+  // the custom format string, which lands as a single leading "\n" on the
+  // *next* record once split on \x1e — strip exactly that, not a full
+  // trim (which could eat meaningful trailing whitespace in a body).
+  const records = raw
+    .split("\x1e")
+    .map((r) => r.replace(/^\n/, ""))
+    .filter((r) => r.length > 0);
 
   let refactorCommits = 0;
   let genericMessageCommits = 0;
+  let aiAssistedCommits = 0;
+  let aiAssistedGenericCommits = 0;
   const authorCounts = {};
   // Every commit actually flagged generic, not just the count -- a report
   // meant to be evidence should let a reader see *which* commits, not just
   // trust a percentage (same principle as not silently capping findings).
   const genericCommitList = [];
+  const aiToolCounts = {};
+  const aiAssistedCommitList = [];
 
-  for (const line of lines) {
-    const [hash, author, subject] = line.split("");
+  for (const record of records) {
+    const firstSep = record.indexOf("\x1f");
+    const secondSep = record.indexOf("\x1f", firstSep + 1);
+    if (firstSep === -1 || secondSep === -1) continue;
+    const hash = record.slice(0, firstSep);
+    const author = record.slice(firstSep + 1, secondSep);
+    const body = record.slice(secondSep + 1);
+    const subject = body.split("\n")[0] || "";
+
     authorCounts[author] = (authorCounts[author] || 0) + 1;
     if (REFACTOR_RE.test(subject)) refactorCommits++;
-    if (GENERIC_MSG_RE.test(subject.trim()) || subject.trim().length < 6) {
+
+    const isGeneric = GENERIC_MSG_RE.test(subject.trim()) || subject.trim().length < 6;
+    if (isGeneric) {
       genericMessageCommits++;
       genericCommitList.push({ hash, author, subject });
     }
+
+    const aiTool = detectAiTool(body);
+    if (aiTool) {
+      aiAssistedCommits++;
+      aiToolCounts[aiTool] = (aiToolCounts[aiTool] || 0) + 1;
+      aiAssistedCommitList.push({ hash, author, tool: aiTool, subject });
+      // The compounding risk pattern this exists to catch: AI wrote it
+      // *and* nobody explained why — not "AI was involved" on its own,
+      // which a disclosed, well-labeled trailer is actually good evidence
+      // against (see scripts/scoring.js's scoreIntentDebt for how this
+      // is weighted).
+      if (isGeneric) aiAssistedGenericCommits++;
+    }
   }
 
+  const totalCommits = records.length;
   return {
-    totalCommits: lines.length,
+    totalCommits,
     refactorCommits,
-    refactorRatio: lines.length ? refactorCommits / lines.length : 0,
+    refactorRatio: totalCommits ? refactorCommits / totalCommits : 0,
     genericMessageCommits,
-    genericMessageRatio: lines.length ? genericMessageCommits / lines.length : 0,
+    genericMessageRatio: totalCommits ? genericMessageCommits / totalCommits : 0,
     authorCounts,
     genericCommitList,
+    aiAssistedCommits,
+    aiAssistedRatio: totalCommits ? aiAssistedCommits / totalCommits : 0,
+    aiToolCounts,
+    aiAssistedCommitList,
+    aiAssistedGenericCommits,
+    aiAssistedGenericRatio: totalCommits ? aiAssistedGenericCommits / totalCommits : 0,
   };
 }
 
@@ -68,7 +138,7 @@ function mineBusFactor(repoPath) {
     "log",
     "--no-merges",
     "--name-only",
-    "--pretty=format:__COMMIT__%x1f%an",
+    "--pretty=format:__COMMIT__\x1f%an",
   ]);
 
   const fileAuthors = new Map(); // filePath -> Set<author>
@@ -76,7 +146,7 @@ function mineBusFactor(repoPath) {
 
   for (const line of raw.split("\n")) {
     if (line.startsWith("__COMMIT__")) {
-      currentAuthor = line.split("")[1];
+      currentAuthor = line.split("\x1f")[1];
       continue;
     }
     const file = line.trim();

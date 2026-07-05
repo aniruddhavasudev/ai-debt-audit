@@ -68,6 +68,16 @@ export function renderCsvWorkbook({ composite, tier, technical, cognitive, inten
         riskTier(intent.score),
         `Whether anyone wrote down why the code works the way it does. See missing-context.csv for specifics.`,
       ],
+      ...(intent.aiAssistedCommits > 0
+        ? [
+            [
+              "AI-Assisted Commits",
+              Math.round(intent.aiAssistedRatio * 100),
+              "N/A (informational)",
+              `${Math.round(intent.aiAssistedRatio * 100)}% of commits carry a known AI coding tool's signature (Co-Authored-By trailer or equivalent) — measured, not inferred. Not itself a risk score: disclosed AI use is transparency, not debt. See missing-context.csv for which of these commits also lack an explanation.`,
+            ],
+          ]
+        : []),
     ]
   );
 
@@ -142,11 +152,14 @@ export function renderCsvWorkbook({ composite, tier, technical, cognitive, inten
   files["knowledge-risk.csv"] = renderCsvTable(["File", "Only Ever Edited By", "What This Means"], knowledgeRows);
 
   // --- missing-context.csv — commits that don't explain why a change was made ---
+  const aiAssistedHashes = new Set((intent.aiAssistedCommitList || []).map((c) => c.hash));
   const contextRows = (intent.genericCommits || []).map((c) => [
     c.hash || "",
     c.author || "",
     c.subject || "",
-    `The commit message ("${c.subject}") doesn't explain why this change was made — future readers (human or AI) have to guess.`,
+    aiAssistedHashes.has(c.hash)
+      ? `The commit message ("${c.subject}") doesn't explain why this change was made, and this commit carries a known AI coding tool's signature — future readers (human or AI) have to guess why AI-generated code was written this way.`
+      : `The commit message ("${c.subject}") doesn't explain why this change was made — future readers (human or AI) have to guess.`,
   ]);
   files["missing-context.csv"] = renderCsvTable(["Commit", "Author", "Commit Message", "What This Means"], contextRows);
 

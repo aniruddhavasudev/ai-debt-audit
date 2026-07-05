@@ -12,12 +12,12 @@
 | **jscpd** | Copy-paste detection |
 | **gitleaks** | Secrets anywhere in git history, not just the current snapshot — a key committed and deleted three months ago still counts |
 
-Plus [`scripts/git-mine.js`](../scripts/git-mine.js), a custom script mining `git log` for what none of the above can see: bus factor, generic commit messages, whether refactoring is happening or just piling up.
+Plus [`scripts/git-mine.js`](../scripts/git-mine.js), a custom script mining `git log` for what none of the above can see: bus factor, generic commit messages, whether refactoring is happening or just piling up, and which commits carry a known AI coding tool's own signature (Claude Code, GitHub Copilot, Cursor) — measured directly from commit trailers, not inferred from code patterns like everything else here.
 
 ## How the score is composed
 
 - **Technical debt (50%)** — Semgrep (35%), Bandit (15%), duplication (15%), historical secrets (20%), dependency vulns (15%)
 - **Cognitive debt (25%)** — bus factor from real git history (bot authors excluded)
-- **Intent debt (25%)** — commit message quality, refactor cadence
+- **Intent debt (25%)** — generic/uninformative commit messages (70%) blended with AI-assisted commits that are *also* generic (30%) — a disclosed AI-assisted commit with a real explanation isn't penalized; one with neither is the unreviewed-dump pattern this exists to catch. Refactor cadence is reported as a trend indicator but not currently scored.
 
 Every constant above is a v1 heuristic, not yet calibrated against a large repo sample — see [CALIBRATION.md](../CALIBRATION.md) for the real findings so far.
