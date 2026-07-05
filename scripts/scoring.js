@@ -280,9 +280,25 @@ export function scoreCognitiveDebt(gitMine) {
   };
 }
 
+// How intent debt splits between its two input signals. A high AI-assisted
+// ratio is *not* itself weighted here — a well-labeled Co-Authored-By
+// trailer is disclosure, which is the opposite of hidden risk. What's
+// actually scored is the compounding case: an AI-assisted commit whose
+// message is *also* generic/uninformative — "AI wrote this and nobody
+// explained why," the exact unreviewed-dump pattern this category exists
+// to surface. Weights are a v1 starting point, same provisional status as
+// every other constant in this file.
+const INTENT_SUBWEIGHTS = {
+  genericMessages: 0.7,
+  aiUnexplainedCommits: 0.3,
+};
+
 export function scoreIntentDebt(gitMine) {
   const genericMessageRatio = gitMine.commitStats?.genericMessageRatio ?? 0;
-  const score = Math.round(100 * genericMessageRatio);
+  const aiAssistedGenericRatio = gitMine.commitStats?.aiAssistedGenericRatio ?? 0;
+  const score = Math.round(
+    100 * (genericMessageRatio * INTENT_SUBWEIGHTS.genericMessages + aiAssistedGenericRatio * INTENT_SUBWEIGHTS.aiUnexplainedCommits)
+  );
   return {
     score,
     genericMessageRatio,
@@ -290,6 +306,16 @@ export function scoreIntentDebt(gitMine) {
     note: "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction.",
     // Every commit actually flagged generic, not just the percentage.
     genericCommits: gitMine.commitStats?.genericCommitList ?? [],
+    // Measured, not inferred — commits whose trailer matches a known AI
+    // coding tool's signature (see git-mine.js's AI_AUTHORSHIP_SIGNATURES).
+    // Reported regardless of score contribution: "X% of commits were
+    // AI-assisted" is useful evidence on its own, disclosed AI use or not.
+    aiAssistedRatio: gitMine.commitStats?.aiAssistedRatio ?? 0,
+    aiAssistedCommits: gitMine.commitStats?.aiAssistedCommits ?? 0,
+    aiToolCounts: gitMine.commitStats?.aiToolCounts ?? {},
+    aiAssistedCommitList: gitMine.commitStats?.aiAssistedCommitList ?? [],
+    aiAssistedGenericRatio,
+    aiAssistedGenericCommits: gitMine.commitStats?.aiAssistedGenericCommits ?? 0,
   };
 }
 

@@ -34,6 +34,14 @@ This repo's own self-scan surfaced this: `github-actions[bot]` shows up as a dis
 
 Not yet fixed. A reasonable improvement: exclude known bot author patterns (`*[bot]`, or a configurable allowlist) from the team-size count used for damping, since they don't represent real knowledge redundancy. Filed as a real, specific thing to fix rather than left as a vague "needs calibration" note — see `scripts/git-mine.js`'s `mineCommitMessages`/`mineBusFactor` for where the author-counting logic lives.
 
+## Finding 4: AI-assisted authorship is measurable, but only disclosure-adjacent risk should be scored
+
+`scripts/git-mine.js` now detects known AI coding tool signatures (Claude Code, GitHub Copilot, Cursor) directly from commit trailers — a measured fact ("X% of commits carry a Co-Authored-By trailer"), not an inference from code patterns like everything else in this tool. The tempting mistake would have been to score a high AI-assisted ratio as debt on its own — but a well-labeled, transparent trailer is *disclosure*, the opposite of a hidden risk. Penalizing it would punish the exact projects being honest about AI involvement, while a project that used just as much AI but never disclosed it (no trailer, same underlying risk) would score better purely for staying quiet.
+
+Instead, intent debt now blends two signals: the existing generic-commit-message ratio (70% weight) and a new `aiAssistedGenericRatio` (30% weight) — the fraction of *all* commits that are both AI-assisted *and* generic/uninformative. That's the actual unreviewed-dump pattern this category exists to catch: AI wrote it, and nobody explained why. A repo that's 100% AI-assisted but every commit has a real explanation scores 0 on this signal — correctly, since that's disclosed and reviewed, not hidden risk. Covered by unit tests in `scripts/score.test.js`, including one asserting disclosed-and-explained AI use is *not* penalized.
+
+This changes intent debt scores for any repo with AI-assisted commits going forward (previously 100% driven by `genericMessageRatio` alone, now 70% driven by it) — a deliberate methodology change, not a bug, and worth knowing about if comparing intent debt scores from before this feature against scores after it.
+
 ## What would make this a real calibration study instead of a snapshot
 
 - 10-15+ repos spanning a genuine range: mature/well-maintained OSS, known-vibe-coded startups (if any become available for testing), and a few in between

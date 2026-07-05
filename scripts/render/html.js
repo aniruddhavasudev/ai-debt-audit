@@ -190,6 +190,18 @@ export function renderHtml({ composite, tier, technical, duplication, historical
       <p>Generic/uninformative commit messages: ${(intent.genericMessageRatio * 100).toFixed(1)}% of commits<br>
       Refactor-commit ratio (trend indicator, not scored): ${(intent.refactorRatio * 100).toFixed(1)}%</p>
       ${intent.genericCommits?.length ? `<p><strong>Commits flagged as generic/uninformative:</strong></p><ul>${intent.genericCommits.map((c) => `<li><code>${escapeHtml(c.hash)}</code> ${escapeHtml(c.author)}: "${escapeHtml(c.subject)}"</li>`).join("")}</ul>` : ""}
+      ${
+        intent.aiAssistedCommits > 0
+          ? `<h3>AI-Assisted Commits (measured from commit trailers, not inferred)</h3>
+             <p>${(intent.aiAssistedRatio * 100).toFixed(1)}% of commits (${intent.aiAssistedCommits}) carry a known AI coding tool's signature</p>
+             <ul>${Object.entries(intent.aiToolCounts).map(([tool, count]) => `<li>${escapeHtml(tool)}: ${count} commit(s)</li>`).join("")}</ul>
+             ${
+               intent.aiAssistedGenericCommits > 0
+                 ? `<p class="dampened">⚠ <strong>${intent.aiAssistedGenericCommits} of those are also generic/uninformative</strong> (${(intent.aiAssistedGenericRatio * 100).toFixed(1)}% of all commits) — this is what's actually scored here, not AI involvement on its own. A disclosed, well-explained AI-assisted commit is not a risk signal; an AI-assisted commit with no explanation is the unreviewed-dump pattern this category exists to catch.</p>`
+                 : ""
+             }`
+          : ""
+      }
     </div>
 
     <footer>Methodology is a v1 heuristic pending calibration against real audited repos.</footer>

@@ -20,6 +20,7 @@ import {
   scoreDependencyVulnerabilities,
   combineTechnicalDebt,
   scoreCognitiveDebt,
+  scoreIntentDebt,
 } from "./scoring.js";
 
 test("teamSizeDampingFactor — 1 author means zero, not a knowledge-silo signal", () => {
@@ -185,4 +186,51 @@ test("scoreCognitiveDebt — a bot author (e.g. github-actions[bot]) does not co
   });
   assert.equal(twoRealHumans.totalAuthors, 2, "two real humans should count even alongside a bot");
   assert.ok(twoRealHumans.score > 0, "two real humans should partially un-damp the score");
+});
+
+test("scoreIntentDebt — no AI-assisted commits behaves exactly as the old generic-message-only formula", () => {
+  const result = scoreIntentDebt({
+    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0 },
+  });
+  // 100 * (0.5 * 0.7 + 0 * 0.3) = 35
+  assert.equal(result.score, 35);
+});
+
+test("scoreIntentDebt — disclosed AI use with well-explained commits is not penalized", () => {
+  // All commits AI-assisted, but none generic — aiAssistedGenericRatio is 0,
+  // so a transparent, well-labeled trailer shouldn't itself raise the score.
+  const result = scoreIntentDebt({
+    commitStats: { genericMessageRatio: 0, aiAssistedRatio: 1.0, aiAssistedGenericRatio: 0 },
+  });
+  assert.equal(result.score, 0);
+  assert.equal(result.aiAssistedRatio, 1.0);
+});
+
+test("scoreIntentDebt — AI-assisted AND generic commits compound into a higher score than either alone", () => {
+  const genericOnly = scoreIntentDebt({
+    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0 },
+  });
+  const genericAndAiUnexplained = scoreIntentDebt({
+    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0.5 },
+  });
+  assert.ok(
+    genericAndAiUnexplained.score > genericOnly.score,
+    "an AI-assisted+generic commit pattern should score worse than the same generic ratio alone"
+  );
+});
+
+test("scoreIntentDebt — surfaces aiToolCounts and aiAssistedCommitList unchanged for reporting", () => {
+  const result = scoreIntentDebt({
+    commitStats: {
+      genericMessageRatio: 0,
+      aiAssistedRatio: 0.4,
+      aiAssistedGenericRatio: 0,
+      aiAssistedCommits: 2,
+      aiToolCounts: { "Claude Code": 2 },
+      aiAssistedCommitList: [{ hash: "abc1234", author: "Dev", tool: "Claude Code", subject: "feat: x" }],
+    },
+  });
+  assert.equal(result.aiAssistedCommits, 2);
+  assert.deepEqual(result.aiToolCounts, { "Claude Code": 2 });
+  assert.equal(result.aiAssistedCommitList.length, 1);
 });

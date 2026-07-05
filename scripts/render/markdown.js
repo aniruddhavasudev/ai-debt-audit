@@ -95,6 +95,17 @@ export function renderMarkdown({ composite, tier, technical, duplication, histor
     }
   }
 
+  if (intent.aiAssistedCommits > 0) {
+    lines.push(`\n### AI-Assisted Commits (measured from commit trailers, not inferred)\n`);
+    lines.push(`- ${(intent.aiAssistedRatio * 100).toFixed(1)}% of commits (${intent.aiAssistedCommits}) carry a known AI coding tool's signature`);
+    for (const [tool, count] of Object.entries(intent.aiToolCounts)) {
+      lines.push(`  - ${tool}: ${count} commit(s)`);
+    }
+    if (intent.aiAssistedGenericCommits > 0) {
+      lines.push(`- ⚠ **${intent.aiAssistedGenericCommits} of those are *also* generic/uninformative** (${(intent.aiAssistedGenericRatio * 100).toFixed(1)}% of all commits) — this is what's actually scored here, not AI involvement on its own. A disclosed, well-explained AI-assisted commit is not a risk signal; an AI-assisted commit with no explanation is the unreviewed-dump pattern this category exists to catch.`);
+    }
+  }
+
   lines.push(`\n---\n*Methodology is a v1 heuristic pending calibration against real audited repos — see scripts/score.js for exact weights and formulas.*`);
 
   return lines.join("\n") + "\n";
