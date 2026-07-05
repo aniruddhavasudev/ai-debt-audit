@@ -7,7 +7,7 @@
   },
   "homepage": "https://github.com/aniruddhavasudev/ai-debt-audit",
   "repository": "https://github.com/aniruddhavasudev/ai-debt-audit",
-  "license": "UNLICENSED",
+  "license": "AGPL-3.0-only",
   "keywords": [
     "ai-debt",
     "technical-debt",

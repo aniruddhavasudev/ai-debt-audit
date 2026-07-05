@@ -15,6 +15,7 @@
     "static-analysis"
   ],
   "author": "",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "https://github.com/aniruddhavasudev/ai-debt-audit.git"
@@ -30,7 +31,8 @@
     "scripts",
     "rules",
     "README.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "LICENSE"
   ],
   "bin": {
     "aidebt-scan": "./bin/aidebt-scan.js"

@@ -3,6 +3,7 @@
 [![CI](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 ![PRs welcome](https://img.shields.io/badge/PRs-welcome-blueviolet)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![AI-Debt Score](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json)](https://github.com/aniruddhavasudev/ai-debt-audit/blob/main/examples/sample-report.md)
 
 That last badge is this repo scanning itself, on a schedule (see [`.github/workflows/self-scan.yml`](.github/workflows/self-scan.yml)) — it's a live number, not a claim.
@@ -148,6 +149,10 @@ This runs the full scan on every PR, uploads findings to GitHub's Security tab a
 ## Using it as a Claude Code skill
 
 This repo is also packaged as a Claude Code plugin ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json), [`skills/ai-debt-audit/SKILL.md`](skills/ai-debt-audit/SKILL.md)) — install it and Claude will know to run a real scan (not just describe one) when you ask it to audit a repo for AI-generated debt.
+
+## License
+
+[AGPL-3.0](LICENSE). Practically: you can use, modify, and self-host this freely, including commercially — the one condition is that if you run a modified version as a network service, you have to make your modified source available to the people using it. That's a deliberate choice, not the default permissive license — it means a competitor can't quietly fork this, rebrand it, and run a closed competing hosted version without giving back.
 
 ## About that `test-fixtures/` folder
 
