@@ -12,6 +12,8 @@ aidebt-scan /path/to/any/repo
 ```
 `npm link` makes `aidebt-scan` available anywhere on your machine.
 
+A bare `aidebt-scan <path>` writes all four report formats next to each other, no flags required: `ai-debt-report.md`, `ai-debt-report.html`, `ai-debt-report.pdf`, and `ai-debt-report-csv/` (the CSV workbook). Pass an empty string to skip any one of them — e.g. `--pdf ""` if you don't have Chrome/Chromium installed, or `--csv ""` if you don't want the workbook.
+
 ## All flags
 
 ```bash
@@ -23,12 +25,12 @@ aidebt-scan <path> [--out report.md] [--html report.html] [--json scores.json]
 | Flag | What it does |
 |---|---|
 | `--out` | Markdown report path (default `./ai-debt-report.md`) |
-| `--html` | Standalone HTML report path; pass `--html ""` to skip it |
-| `--json` | Dumps raw scores — useful for tracking a score over time |
-| `--sarif` | Writes GitHub's native code-scanning format, for the Security tab |
-| `--csv csv-dir/` | Writes a small "workbook" of plain-language CSV files into that directory — `summary.csv` (one row per debt category, plain-English takeaway), `technical-debt.csv`, `knowledge-risk.csv`, and `missing-context.csv`. Severity is normalized to Critical/High/Medium/Low across every tool instead of each tool's own raw vocabulary, so it reads consistently in a spreadsheet |
+| `--html` | Standalone HTML report path; on by default (same name as `--out`, `.html` extension) — pass `--html ""` to skip it |
+| `--json` | Dumps raw scores — useful for tracking a score over time. Off by default (unlike `--html`/`--csv`/`--pdf`, since it's a machine-readable format most people don't need) |
+| `--sarif` | Writes GitHub's native code-scanning format, for the Security tab. Off by default — only useful in CI |
+| `--csv csv-dir/` | On by default (writes to `<out-basename>-csv/`) — pass `--csv ""` to skip it. Writes a small "workbook" of plain-language CSV files into that directory: `summary.csv` (one row per debt category, plain-English takeaway), `technical-debt.csv`, `knowledge-risk.csv`, and `missing-context.csv`. Severity is normalized to Critical/High/Medium/Low across every tool instead of each tool's own raw vocabulary, so it reads consistently in a spreadsheet |
 | `--fail-on-score N` | Exits non-zero if the composite score is `>= N` — the hook a CI pipeline needs to actually block something |
-| `--pdf` | Renders the HTML report via headless Chrome/Chromium (whichever is on `PATH`) — a deliverable format |
+| `--pdf` | On by default (same name as `--out`, `.pdf` extension) — pass `--pdf ""` to skip it. Renders the HTML report via headless Chrome/Chromium (whichever is on `PATH`); silently skips itself with a warning if neither is found |
 | `--history history.json` | Appends this run's score to a local JSON log and shows the trend vs. the previous run |
 | `--diff main` | Scopes Semgrep/Bandit to files changed vs. `main` (or any ref) instead of the whole repo — answers "did this PR add debt," not "what's wrong with everything." Falls back to a full scan if the ref can't be resolved. git-mine/jscpd/gitleaks stay repo-wide regardless, since bus factor and duplication are inherently whole-codebase questions |
 | `--badge badge.json` | Writes a [shields.io endpoint-badge](https://shields.io/badges/endpoint-badge) JSON file — commit it and reference it in your own README for a live score badge, the way this repo does for itself (see [`.github/workflows/self-scan.yml`](../.github/workflows/self-scan.yml)) |
@@ -63,7 +65,7 @@ All three keys are optional.
     fail-on-score: '70'   # optional — omit to report without blocking the PR
 ```
 
-This runs the full scan on every PR, uploads findings to GitHub's Security tab as SARIF, and attaches the Markdown/HTML reports as workflow artifacts. See [`action.yml`](../action.yml) for all inputs.
+This runs the full scan on every PR, uploads findings to GitHub's Security tab as SARIF, and attaches the Markdown/HTML/PDF reports and CSV workbook as workflow artifacts. See [`action.yml`](../action.yml) for all inputs.
 
 **`fetch-depth: 0` is not optional.** `actions/checkout`'s default (`fetch-depth: 1`, a single commit) silently wrecks the cognitive/intent debt scores — confirmed empirically: a shallow 50-commit clone of a mature, widely-contributed project scored cognitive debt at 86/100; the same repo with full history scored 37/100. It doesn't error, it just quietly produces a wrong number, because bus-factor and commit-message analysis both need real history to mean anything. The scanner detects a shallow clone and warns in the terminal and report if this happens anyway — but fixing the checkout step avoids the problem entirely.
 
