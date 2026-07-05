@@ -111,7 +111,6 @@ runs:
         path: |
           ai-debt-report.md
           ai-debt-report.html
-          ai-debt-report.pdf
           ai-debt-csv/
 
     - name: Fail the check if the scan exited non-zero

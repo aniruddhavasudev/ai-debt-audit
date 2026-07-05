@@ -106,7 +106,7 @@ cd ai-debt-audit && npm install && npm link
 aidebt-scan /path/to/any/repo
 ```
 
-That's it — no accounts, no config required, no code sent anywhere. Every scan writes all four report formats by default: Markdown, HTML, PDF, and a plain-language CSV workbook — no extra flags needed.
+That's it — no accounts, no config required, no code sent anywhere.
 
 ```
 ────────────────────────────────────────────────────────

@@ -14,16 +14,12 @@
  *                              [--sarif results.sarif] [--csv csv-dir/] [--fail-on-score N]
  *                              [--pdf report.pdf] [--history history.json] [--diff base-ref]
  *
- * By default, a scan writes a Markdown report (--out, default
- * ./ai-debt-report.md), an HTML report (same name, .html extension), a CSV
- * workbook (same name, -csv suffix directory), and a PDF (same name, .pdf
- * extension) — all four, every time, no flags required. Pass an empty
- * string to opt out of any one of them individually: --html "", --csv "",
- * --pdf "".
+ * By default, both a Markdown report (--out, default ./ai-debt-report.md)
+ * and an HTML report (same name, .html extension) are written. Pass
+ * --html "" to skip HTML generation.
  *
  * --sarif writes GitHub's native code-scanning format (upload with
- * github/codeql-action/upload-sarif to surface findings in the Security tab)
- * — this one is opt-in, not a default, since it's only useful in CI.
+ * github/codeql-action/upload-sarif to surface findings in the Security tab).
  * --csv writes a small directory of plain-language CSV files (a
  * "workbook": summary.csv plus one sheet per debt category) instead of one
  * flat table of rule IDs — meant to be readable by someone who isn't the
@@ -32,8 +28,7 @@
  * hook a CI pipeline needs to actually block a PR, not just log a number.
  * --pdf renders the HTML report to PDF via headless Chrome/Chromium — the
  * actual client-deliverable format, not just an internal artifact. Requires
- * an HTML report to exist (not compatible with --html ""), and silently
- * skips itself (with a warning) if no Chrome/Chromium is found on PATH.
+ * an HTML report to exist (not compatible with --html "").
  * --history appends this run's score to a local JSON file and shows the
  * trend (improving/worsening) vs the previous run — "is this getting
  * better or worse" is a different question than "what's the score now,"
@@ -505,13 +500,12 @@ function main() {
 
   const outPath = args.out ? path.resolve(args.out) : path.resolve("ai-debt-report.md");
   const htmlPath = args.html === undefined ? outPath.replace(/\.md$/, "") + ".html" : args.html ? path.resolve(args.html) : null;
-  const csvPath = args.csv === undefined ? outPath.replace(/\.md$/, "") + "-csv" : args.csv ? path.resolve(args.csv) : null;
   const rawJsonPath = path.join(workDir, "scores.json");
 
   scoreArgs.push("--out", outPath, "--json", rawJsonPath);
   if (htmlPath) scoreArgs.push("--html", htmlPath);
   if (args.sarif) scoreArgs.push("--sarif", path.resolve(args.sarif));
-  if (csvPath) scoreArgs.push("--csv", csvPath);
+  if (args.csv) scoreArgs.push("--csv", path.resolve(args.csv));
   if (args.badge) scoreArgs.push("--badge", path.resolve(args.badge));
   if (args["fail-on-score"] !== undefined) scoreArgs.push("--fail-on-score", args["fail-on-score"]);
   if (changedFiles) scoreArgs.push("--files-scanned", String(changedFiles.length));
@@ -527,16 +521,11 @@ function main() {
   if (args.json) fs.copyFileSync(rawJsonPath, path.resolve(args.json));
 
   let pdfPath = null;
-  const pdfRequested = args.pdf === undefined ? true : Boolean(args.pdf);
-  if (pdfRequested) {
+  if (args.pdf) {
     if (!htmlPath) {
-      // Only warn if the user explicitly asked for --pdf — if it's just the
-      // default kicking in while --html "" was also passed, skip quietly.
-      if (args.pdf) {
-        console.error(c.yellow("  --pdf requires an HTML report to render from — can't combine with --html \"\""));
-      }
+      console.error(c.yellow("  --pdf requires an HTML report to render from — can't combine with --html \"\""));
     } else {
-      pdfPath = args.pdf ? path.resolve(args.pdf) : outPath.replace(/\.md$/, "") + ".pdf";
+      pdfPath = path.resolve(args.pdf);
       step("PDF export", () => runPdfExport(htmlPath, pdfPath));
     }
   }
@@ -557,7 +546,7 @@ function main() {
     history,
     args.sarif ? path.resolve(args.sarif) : null,
     args.badge ? path.resolve(args.badge) : null,
-    csvPath
+    args.csv ? path.resolve(args.csv) : null
   );
 
   // Propagate score.js's exit code — this is how --fail-on-score reaches
