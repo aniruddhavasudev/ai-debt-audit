@@ -19,6 +19,11 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Fetch test fixtures from test-data branch
+        run: |
+          git fetch --depth 1 origin test-data
+          git checkout origin/test-data -- test-fixtures calibration-pilot-results
+
       - name: Install Python scanning tools
         run: pip install --quiet semgrep bandit pip-audit
 
@@ -56,6 +61,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch test fixtures from test-data branch
+        run: |
+          git fetch --depth 1 origin test-data
+          git checkout origin/test-data -- test-fixtures
 
       - name: Build the Docker image
         run: docker build -t ai-debt-audit:ci-test .
