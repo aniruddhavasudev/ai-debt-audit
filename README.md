@@ -25,7 +25,7 @@ Point it at a repo, it runs six tools, you get one score and a full breakdown. T
 <td width="33%" valign="top">
 
 ### 🔧 Technical debt
-The code itself — security holes, duplicated logic, unfinished stubs. Caught by 54 custom Semgrep rules plus Bandit, pip-audit, and jscpd.
+The code itself — security holes, duplicated logic, unfinished stubs. Caught by 64 custom Semgrep rules plus Bandit, pip-audit, and jscpd.
 
 </td>
 <td width="33%" valign="top">
@@ -61,8 +61,8 @@ I built it deterministic on purpose. Every finding traces back to a specific rul
 
 | Tool | What it's for |
 |---|---|
-| Semgrep, 54 custom rules | The AI-specific stuff: disabled Supabase RLS, Flask SSTI via `render_template_string`, Django `DEBUG=True`, Rails mass-assignment via `params.permit!`, swallowed exceptions, `NotImplementedError` stubs that made it to main |
-| Semgrep's own `p/django` + `p/flask` packs | Didn't want to hand-write every Django/Flask rule when Semgrep's community registry already covers XSS and mass-assignment better than I would |
+| Semgrep, 64 custom rules | The AI-specific stuff: disabled Supabase RLS, Flask SSTI via `render_template_string`, Django `DEBUG=True`, Rails mass-assignment via `params.permit!`, Go's `if err != nil {}` swallowed silently, `NotImplementedError` stubs that made it to main |
+| Semgrep's own `p/django` + `p/flask` + `p/golang` packs | Didn't want to hand-write every framework-specific rule when Semgrep's community registry already covers a lot of this better than I would |
 | Bandit | Python security linting — hardcoded passwords, `pickle.loads`, that kind of thing |
 | pip-audit | Checks your actual pinned dependency versions against known CVEs |
 | jscpd | Copy-paste detection |

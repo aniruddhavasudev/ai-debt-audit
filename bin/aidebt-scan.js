@@ -207,7 +207,7 @@ function step(label, fn) {
 // custom AI-debt rules, not instead of them: the registry doesn't know
 // about AI-specific smells (placeholder stubs, framework misuse patterns),
 // only our rules do.
-const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask"];
+const SEMGREP_REGISTRY_PACKS = ["p/django", "p/flask", "p/golang"];
 
 function runSemgrep(targetPath, outPath, changedFiles) {
   const configArgs = [RULES_DIR, ...SEMGREP_REGISTRY_PACKS].flatMap((cfg) => ["--config", cfg]);

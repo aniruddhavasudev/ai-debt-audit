@@ -18,6 +18,7 @@ Semgrep scans every `.yml` in this directory automatically — no need to refere
 - `05-supabase-smells.yml` — disabled RLS, permissive policies, service-role key exposure, unvalidated webhooks
 - `06-django-flask-smells.yml` — `DEBUG=True`, CSRF/CORS misconfiguration, SSTI, insecure deserialization
 - `07-rails-smells.yml` — mass assignment (`params.permit!`, raw `params[...]`), `.html_safe`/`raw()` XSS, SQL string interpolation, `Marshal.load`, dangerous `send`
+- `08-go-smells.yml` — SQL/command injection via `fmt.Sprintf`, `InsecureSkipVerify`, `math/rand` for tokens, path traversal, empty `if err != nil {}`, JWT "none" algorithm
 
 ## Extending the rule set
 

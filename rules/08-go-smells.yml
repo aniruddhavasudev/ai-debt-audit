@@ -1,0 +1,162 @@
+rules:
+  - id: ai-debt-go-sql-string-concat
+    languages: [go]
+    severity: ERROR
+    message: >
+      SQL query built via fmt.Sprintf/string concatenation instead of a
+      parameterized placeholder ($1, ?). Same failure mode as raw
+      cursor.execute() in Python or string-interpolated `where()` in
+      Rails — AI-generated CRUD code that "looks correct" until a value
+      contains a quote.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: $DB.Query(fmt.Sprintf(...))
+          - pattern: $DB.Exec(fmt.Sprintf(...))
+          - pattern: $DB.QueryRow(fmt.Sprintf(...))
+
+  - id: ai-debt-go-command-injection
+    languages: [go]
+    severity: ERROR
+    message: >
+      exec.Command invoking a shell ("sh -c" / "bash -c") with a
+      dynamically built argument. AI-generated glue code reaches for this
+      to "run a shell command" without considering that any
+      attacker-influenced part of the string becomes arbitrary command
+      execution.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    patterns:
+      - pattern-either:
+          - pattern: exec.Command("sh", "-c", fmt.Sprintf(...))
+          - pattern: exec.Command("bash", "-c", fmt.Sprintf(...))
+
+  - id: ai-debt-go-insecure-tls-skip-verify
+    languages: [go]
+    severity: ERROR
+    message: >
+      tls.Config{InsecureSkipVerify: true} disables certificate
+      verification entirely. Seen repeatedly in AI-generated "fix the TLS
+      handshake error" responses that silence the error instead of
+      resolving the underlying cert issue — same pattern as Python's
+      `verify=False` or Node's `rejectUnauthorized: false`.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern: 'tls.Config{..., InsecureSkipVerify: true, ...}'
+
+  - id: ai-debt-go-weak-random-for-token
+    languages: [go]
+    severity: WARNING
+    message: >
+      math/rand used to generate a value that looks security-sensitive
+      (token/secret/password/key). math/rand is not cryptographically
+      secure and is predictable from its seed — crypto/rand is the
+      correct package for anything used as a credential.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    patterns:
+      - pattern-either:
+          - pattern: $TOKEN := rand.Int(...)
+          - pattern: $TOKEN := rand.Intn(...)
+      - metavariable-regex:
+          metavariable: $TOKEN
+          regex: "(?i).*(token|secret|password|passwd|apikey|api_key|session).*"
+
+  - id: ai-debt-go-path-traversal
+    languages: [go]
+    severity: ERROR
+    message: >
+      File path built by joining a base directory with unsanitized input
+      and passed directly to a file-opening call. Without stripping
+      "..", an attacker-controlled filename component can escape the
+      intended directory — a classic path-traversal primitive AI-
+      generated "serve this file" handlers frequently miss.
+    metadata:
+      ai_debt_category: security
+      weight: 4
+    patterns:
+      - pattern-either:
+          - pattern: os.Open(filepath.Join($BASE, $USERINPUT))
+          - pattern: os.ReadFile(filepath.Join($BASE, $USERINPUT))
+          - pattern: ioutil.ReadFile(filepath.Join($BASE, $USERINPUT))
+
+  - id: ai-debt-go-empty-error-check
+    languages: [go]
+    severity: WARNING
+    message: >
+      `if err != nil { }` with an empty body — Go's idiomatic error
+      handling shape, but with nothing inside it. Same failure mode as an
+      empty catch block in JS/Python: the error is detected and then
+      silently discarded rather than handled, logged, or returned.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 4
+    pattern: |
+      if $ERR != nil {
+      }
+
+  - id: ai-debt-go-hardcoded-secret
+    languages: [generic]
+    severity: ERROR
+    message: >
+      Hardcoded credential/secret literal. Extremely common in AI-
+      generated code copied from tutorial examples where the model fills
+      in a plausible-looking placeholder key/token.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    paths:
+      include:
+        - "*.go"
+    pattern-regex: '(?i)(api|secret|token|password|passwd|pwd)[_-]?key\s*:?=\s*["`][A-Za-z0-9\-_/+=]{12,}["`]'
+
+  - id: ai-debt-go-cors-wildcard
+    languages: [go]
+    severity: WARNING
+    message: >
+      Access-Control-Allow-Origin set to "*" directly on the response
+      writer. Common AI shortcut to silence a browser CORS error during
+      development; if this is an authenticated API, a wildcard origin
+      undermines cookie/credential protections the same way as the
+      Flask/Rails/Express equivalents.
+    metadata:
+      ai_debt_category: security
+      weight: 3
+    pattern: $W.Header().Set("Access-Control-Allow-Origin", "*")
+
+  - id: ai-debt-go-panic-recover-swallowed
+    languages: [go]
+    severity: WARNING
+    message: >
+      `recover()` called with nothing done with its result — the panic is
+      caught and silently discarded instead of being logged or handled.
+      Same failure mode as an empty catch block: AI-generated code adds
+      the recover() to "make the crash go away" without addressing why
+      the panic happened.
+    metadata:
+      ai_debt_category: error_handling
+      weight: 3
+    pattern: |
+      defer func() {
+        recover()
+      }()
+
+  - id: ai-debt-go-jwt-none-algorithm
+    languages: [go]
+    severity: ERROR
+    message: >
+      JWT parsing that accepts (or explicitly sets) the "none" signing
+      algorithm — a well-known JWT bypass that lets an attacker forge
+      arbitrary tokens with no signature at all. AI assistants sometimes
+      generate this while "simplifying" JWT validation code.
+    metadata:
+      ai_debt_category: security
+      weight: 5
+    pattern-either:
+      - pattern: jwt.SigningMethodNone
+      - pattern-regex: '(?i)"alg"\s*:\s*"none"'

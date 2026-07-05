@@ -72,6 +72,16 @@ const EXPECTED_RULE_IDS = [
   "ai-debt-rails-insecure-marshal-load",
   "ai-debt-rails-hardcoded-secret-key-base",
   "ai-debt-rails-cors-wildcard",
+  "ai-debt-go-sql-string-concat",
+  "ai-debt-go-command-injection",
+  "ai-debt-go-insecure-tls-skip-verify",
+  "ai-debt-go-weak-random-for-token",
+  "ai-debt-go-path-traversal",
+  "ai-debt-go-empty-error-check",
+  "ai-debt-go-hardcoded-secret",
+  "ai-debt-go-cors-wildcard",
+  "ai-debt-go-panic-recover-swallowed",
+  "ai-debt-go-jwt-none-algorithm",
 ];
 
 function main() {

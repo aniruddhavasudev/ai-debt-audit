@@ -36,7 +36,6 @@ Every rule should trace to a *specific, observed AI failure mode* — not a gene
 
 ## Good first issues (not yet filed as GitHub issues — pick one, or ping me and I'll file it properly with a label)
 
-- **Go rule coverage** — currently only the generic placeholder-comment rule applies to Go at all.
 - **`--diff` mode for jscpd** — duplication currently always scans the whole repo even in `--diff` mode; scoping it to compare changed files against the rest of the codebase (not just against each other) would make CI runs faster without losing signal.
 - **A second real-repo calibration pass** — the saturation constants in `scripts/score.js` were set from testing against a small number of repos. Running the scanner against a broader set (a mix of mature OSS projects and known vibe-coded ones) and proposing constant adjustments with the actual score distributions attached would be extremely useful.
 - **Windows compatibility check** — the CLI has only been tested on Linux; path handling (`path.join`/`path.relative`) *should* be cross-platform-safe since it's all done through Node's `path` module rather than manual string concatenation, but this hasn't actually been verified on Windows.
