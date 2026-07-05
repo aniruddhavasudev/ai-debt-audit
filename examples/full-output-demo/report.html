@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI-Debt Report — ai-debt-audit</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; padding: 40px; background: #f8fafc; color: #1e293b; line-height: 1.5;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  header { margin-bottom: 32px; }
+  header h1 { font-size: 22px; margin: 0 0 4px; color: #0f172a; }
+  header .meta { color: #64748b; font-size: 13px; }
+  .score-card {
+    display: flex; align-items: center; gap: 28px;
+    background: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 6px solid #16a34a;
+  }
+  .score-circle {
+    width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    background: #16a34a1a; border: 4px solid #16a34a;
+  }
+  .score-circle .num { font-size: 28px; font-weight: 700; color: #16a34a; line-height: 1; }
+  .score-circle .max { font-size: 11px; color: #64748b; }
+  .score-text .tier { font-size: 20px; font-weight: 700; color: #16a34a; margin: 0 0 4px; }
+  .score-text .sub { color: #64748b; font-size: 14px; }
+  .card {
+    background: white; border-radius: 12px; padding: 24px 28px; margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card h2 { font-size: 16px; margin: 0 0 16px; color: #0f172a; }
+  .cat-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .cat-label { width: 200px; font-size: 13px; color: #334155; }
+  .cat-weight { color: #94a3b8; font-size: 11px; }
+  .cat-bar-track { flex: 1; height: 10px; background: #e2e8f0; border-radius: 6px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 6px; }
+  .cat-score { width: 60px; text-align: right; font-size: 13px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  th { color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .badge { color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .path { color: #64748b; font-family: monospace; font-size: 12px; white-space: nowrap; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  .dampened { color: #ca8a04; font-size: 12px; margin-top: 4px; }
+  ul { margin: 0; padding-left: 20px; font-size: 13px; }
+  footer { color: #94a3b8; font-size: 12px; text-align: center; margin-top: 32px; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI-Debt Report</h1>
+      <div class="meta">ai-debt-audit · generated 2026-07-05T05:39:52.103Z</div>
+    </header>
+
+    <div class="score-card">
+      <div class="score-circle"><div class="num">24</div><div class="max">/ 100</div></div>
+      <div class="score-text">
+        <div class="tier">Low Risk</div>
+        <div class="sub">Blended from technical (50%), cognitive (25%), and intent (25%) debt signals</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Category Breakdown</h2>
+      
+    <div class="cat-row">
+      <div class="cat-label">Technical debt <span class="cat-weight">50%</span></div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:21%;background:#16a34a"></div></div>
+      <div class="cat-score" style="color:#16a34a">21/100</div>
+    </div>
+      
+    <div class="cat-row">
+      <div class="cat-label">Cognitive debt <span class="cat-weight">25%</span></div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:49%;background:#ca8a04"></div></div>
+      <div class="cat-score" style="color:#ca8a04">49/100</div>
+    </div>
+      
+    <div class="cat-row">
+      <div class="cat-label">Intent debt <span class="cat-weight">25%</span></div>
+      <div class="cat-bar-track"><div class="cat-bar-fill" style="width:4%;background:#16a34a"></div></div>
+      <div class="cat-score" style="color:#16a34a">4/100</div>
+    </div>
+    </div>
+
+    <div class="card">
+      <h2>Technical Debt — 29 Semgrep findings</h2>
+      <ul><li><strong>error_handling</strong>: 5 findings (weighted 20)</li><li><strong>incomplete_implementation</strong>: 23 findings (weighted 23)</li><li><strong>security</strong>: 1 findings (weighted 3)</li></ul>
+    </div>
+
+    <div class="card">
+      <h2>All Findings</h2>
+      <table>
+        <thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Detail</th></tr></thead>
+        <tbody>
+      <tr>
+        <td><span class="badge" style="background:#ca8a04">WARNING</span></td>
+        <td><code>ai-debt-empty-catch-block-js</code></td>
+        <td class="path">bin/aidebt-scan.js:259</td>
+        <td>Empty catch block. AI-generated code frequently wraps calls in try/catch to &quot;make the error go away&quot; without handling or surfacing the failure — a hallmark of unreviewed AI output.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#ca8a04">WARNING</span></td>
+        <td><code>ai-debt-empty-catch-block-js</code></td>
+        <td class="path">bin/aidebt-scan.js:288</td>
+        <td>Empty catch block. AI-generated code frequently wraps calls in try/catch to &quot;make the error go away&quot; without handling or surfacing the failure — a hallmark of unreviewed AI output.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#ca8a04">WARNING</span></td>
+        <td><code>ai-debt-empty-catch-block-js</code></td>
+        <td class="path">bin/aidebt-scan.js:343</td>
+        <td>Empty catch block. AI-generated code frequently wraps calls in try/catch to &quot;make the error go away&quot; without handling or surfacing the failure — a hallmark of unreviewed AI output.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#ca8a04">WARNING</span></td>
+        <td><code>ai-debt-empty-catch-block-js</code></td>
+        <td class="path">bin/aidebt-scan.js:358</td>
+        <td>Empty catch block. AI-generated code frequently wraps calls in try/catch to &quot;make the error go away&quot; without handling or surfacing the failure — a hallmark of unreviewed AI output.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#ca8a04">WARNING</span></td>
+        <td><code>ai-debt-empty-catch-block-js</code></td>
+        <td class="path">bin/aidebt-scan.js:386</td>
+        <td>Empty catch block. AI-generated code frequently wraps calls in try/catch to &quot;make the error go away&quot; without handling or surfacing the failure — a hallmark of unreviewed AI output.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#ca8a04">WARNING</span></td>
+        <td><code>ai-debt-flask-cors-wildcard</code></td>
+        <td class="path">rules/09-java-spring-smells.yml:46</td>
+        <td>Flask-CORS configured with a wildcard origin. Common AI shortcut to silence a browser CORS error during development; if this is an authenticated API, wildcard origins undermine cookie/credential protections.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:414</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:415</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:416</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:418</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:425</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:440</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:443</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:444</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:445</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:446</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:447</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:448</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:449</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:450</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:451</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:452</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:453</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:454</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:466</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">bin/aidebt-scan.js:472</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">scripts/test-config-integration.js:89</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">scripts/test-rules.js:108</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:#64748b">INFO</span></td>
+        <td><code>ai-debt-console-log-debug-leftover</code></td>
+        <td class="path">scripts/test-rules.js:116</td>
+        <td>console.log/debugger left in source. Individually trivial, but a high density across a codebase correlates strongly with unreviewed AI-generated commits (weight this by frequency, not presence).</td>
+      </tr></tbody>
+      </table>
+    </div>
+
+    <div class="card"><h2>Python Security (Bandit) — 0 findings</h2>
+           <p>sub-score 0/100 — by severity: none</p>
+           <table><thead><tr><th>Severity</th><th>Test</th><th>Location</th><th>Detail</th></tr></thead><tbody>
+           
+           </tbody></table></div>
+
+    <div class="card"><h2>Dependency Vulnerabilities (pip-audit + npm audit)</h2><p>No known-vulnerable dependencies found — sub-score 0/100</p></div>
+
+    <div class="card"><h2>Duplication (jscpd)</h2><p>2.7% duplicated lines (325/11897) across 48 clone pairs — sub-score 14/100</p>
+           <ul><li>7 lines: <code>.github/workflows/ci.yml:27-33</code> ↔ <code>.github/workflows/self-scan.yml:37-43</code></li><li>16 lines: <code>docs/index.html:5-20</code> ↔ <code>report.html:5-20</code></li><li>6 lines: <code>docs/index.html:20-25</code> ↔ <code>report.html:20-25</code></li><li>29 lines: <code>docs/index.html:29-57</code> ↔ <code>report.html:29-57</code></li><li>11 lines: <code>docs/index.html:63-73</code> ↔ <code>report.html:63-73</code></li><li>6 lines: <code>docs/index.html:74-79</code> ↔ <code>report.html:74-79</code></li><li>6 lines: <code>docs/index.html:80-85</code> ↔ <code>report.html:80-85</code></li><li>8 lines: <code>docs/index.html:96-103</code> ↔ <code>report.html:96-103</code></li><li>7 lines: <code>docs/index.html:103-109</code> ↔ <code>report.html:109-115</code></li><li>7 lines: <code>docs/index.html:103-109</code> ↔ <code>report.html:115-121</code></li><li>7 lines: <code>docs/index.html:103-109</code> ↔ <code>report.html:121-127</code></li><li>6 lines: <code>docs/index.html:103-108</code> ↔ <code>report.html:127-132</code></li><li>6 lines: <code>docs/index.html:104-109</code> ↔ <code>docs/index.html:110-115</code></li><li>6 lines: <code>docs/index.html:104-109</code> ↔ <code>docs/index.html:122-127</code></li><li>6 lines: <code>docs/index.html:109-114</code> ↔ <code>docs/index.html:115-120</code></li><li>7 lines: <code>docs/index.html:109-115</code> ↔ <code>docs/index.html:127-133</code></li><li>6 lines: <code>docs/index.html:116-121</code> ↔ <code>docs/index.html:134-139</code></li><li>6 lines: <code>docs/index.html:116-121</code> ↔ <code>report.html:134-139</code></li><li>6 lines: <code>docs/index.html:121-126</code> ↔ <code>docs/index.html:133-138</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>docs/index.html:139-145</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>docs/index.html:145-151</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>docs/index.html:151-157</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:139-145</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:145-151</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:151-157</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:157-163</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:163-169</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:169-175</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:175-181</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:181-187</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:187-193</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:193-199</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:199-205</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:205-211</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:211-217</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:217-223</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:223-229</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:229-235</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:235-241</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:241-247</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:247-253</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:253-259</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:259-265</code></li><li>7 lines: <code>docs/index.html:121-127</code> ↔ <code>report.html:265-271</code></li><li>11 lines: <code>docs/index.html:121-131</code> ↔ <code>report.html:271-283</code></li><li>11 lines: <code>rules/01-security-smells.yml:2-12</code> ↔ <code>rules/08-go-smells.yml:103-113</code></li><li>10 lines: <code>rules/01-security-smells.yml:53-62</code> ↔ <code>rules/01-security-smells.yml:68-77</code></li><li>7 lines: <code>test-fixtures/dup1.js:1-7</code> ↔ <code>test-fixtures/dup2.js:1-7</code></li></ul>
+           </div>
+
+    <div class="card"><h2>Historical Secrets (gitleaks)</h2><p><strong style="color:#dc2626">2 leaked secret(s) found in git history</strong> — sub-score 50/100</p>
+           <ul><li><code>generic-api-key</code> in <code>test-fixtures/rails/config/secrets.yml:2</code> (commit 560b7622)</li><li><code>aws-access-token</code> in <code>test-fixtures/bad.py:31</code> (commit a933837c)</li></ul>
+           </div>
+
+    <div class="card">
+      <h2>Cognitive Debt (knowledge concentration)</h2>
+      
+      <p>Bus-factor risk ratio (raw): 97.8% of tracked files have had only one author ever<br>
+      Total distinct authors: 2 (team-size damping factor: 0.50)</p>
+      <p class="dampened">⚠ Score damped heavily — with only 2 total contributor(s), single-author-per-file is structural, not a debt signal.</p>
+      <p><strong>Files only one person has ever touched:</strong></p><ul><li><code>action.yml</code> (Solo Builder)</li><li><code>bin/aidebt-scan.js</code> (Solo Builder)</li><li><code>docs/USAGE.md</code> (Solo Builder)</li><li><code>scripts/score.js</code> (Solo Builder)</li><li><code>scripts/git-mine.js</code> (Solo Builder)</li><li><code>scripts/test-config-integration.js</code> (Solo Builder)</li><li><code>CONTRIBUTING.md</code> (Solo Builder)</li><li><code>skills/ai-debt-audit/SKILL.md</code> (Solo Builder)</li><li><code>.claude-plugin/plugin.json</code> (Solo Builder)</li><li><code>package.json</code> (Solo Builder)</li><li><code>docs/WHAT_IT_CATCHES.md</code> (Solo Builder)</li><li><code>CALIBRATION_50_REPOS.md</code> (Solo Builder)</li><li><code>calibration-pilot-results/caddyserver_caddy.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/calcom_cal.com.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/encode_django-rest-framework.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/forem_forem.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/gin-gonic_gin.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/gofiber_fiber.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/gothinkster_realworld.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/miguelgrinberg_flasky.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/pallets_flask.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/shadcn-ui_taxonomy.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/spring-projects_spring-petclinic.json</code> (Solo Builder)</li><li><code>calibration-pilot-results/wagtail_wagtail.json</code> (Solo Builder)</li><li><code>docs/TOOLS.md</code> (Solo Builder)</li><li><code>.aidebtrc.json</code> (Solo Builder)</li><li><code>.github/workflows/self-scan.yml</code> (Solo Builder)</li><li><code>.gitattributes</code> (Solo Builder)</li><li><code>.github/workflows/ci.yml</code> (Solo Builder)</li><li><code>rules/09-java-spring-smells.yml</code> (Solo Builder)</li><li><code>rules/README.md</code> (Solo Builder)</li><li><code>scripts/score.test.js</code> (Solo Builder)</li><li><code>scripts/test-rules.js</code> (Solo Builder)</li><li><code>test-fixtures/java/src/main/java/com/example/InsecureClient.java</code> (Solo Builder)</li><li><code>test-fixtures/java/src/main/java/com/example/SecurityConfig.java</code> (Solo Builder)</li><li><code>test-fixtures/java/src/main/java/com/example/UserService.java</code> (Solo Builder)</li><li><code>rules/08-go-smells.yml</code> (Solo Builder)</li><li><code>test-fixtures/go/main.go</code> (Solo Builder)</li><li><code>Dockerfile</code> (Solo Builder)</li><li><code>CALIBRATION.md</code> (Solo Builder)</li><li><code>assets/logo.svg</code> (Solo Builder)</li><li><code>marketing/launch-drafts.md</code> (Solo Builder)</li><li><code>marketing/release-notes-v1.4.0.md</code> (Solo Builder)</li><li><code>LICENSE</code> (Solo Builder)</li><li><code>rules/07-rails-smells.yml</code> (Solo Builder)</li><li><code>test-fixtures/rails/app/controllers/users_controller.rb</code> (Solo Builder)</li><li><code>test-fixtures/rails/config/initializers/cors.rb</code> (Solo Builder)</li><li><code>test-fixtures/rails/config/secrets.yml</code> (Solo Builder)</li><li><code>.dockerignore</code> (Solo Builder)</li><li><code>.gitignore</code> (Solo Builder)</li><li><code>.github/workflows/ai-debt-check.yml</code> (Solo Builder)</li><li><code>rules/01-security-smells.yml</code> (Solo Builder)</li><li><code>assets/demo-terminal.png</code> (Solo Builder)</li><li><code>assets/demo-terminal.svg</code> (Solo Builder)</li><li><code>assets/sample-report.png</code> (Solo Builder)</li><li><code>docs/index.html</code> (Solo Builder)</li><li><code>examples/sample-report.md</code> (Solo Builder)</li><li><code>ai-debt-audit</code> (Solo Builder)</li><li><code>ai-debt-report.html</code> (Solo Builder)</li><li><code>ai-debt-report.md</code> (Solo Builder)</li><li><code>test-fixtures/flask/requirements.txt</code> (Solo Builder)</li><li><code>rules/06-django-flask-smells.yml</code> (Solo Builder)</li><li><code>test-fixtures/django/myproject/settings.py</code> (Solo Builder)</li><li><code>test-fixtures/django/views.py</code> (Solo Builder)</li><li><code>test-fixtures/flask/app.py</code> (Solo Builder)</li><li><code>scripts/colors.js</code> (Solo Builder)</li><li><code>node_modules/.package-lock.json</code> (Solo Builder)</li><li><code>package-lock.json</code> (Solo Builder)</li><li><code>test-fixtures/bad.py</code> (Solo Builder)</li><li><code>node_modules/.bin/jscpd</code> (Solo Builder)</li><li><code>node_modules/cpd-linux-x64-gnu/LICENSE</code> (Solo Builder)</li><li><code>node_modules/cpd-linux-x64-gnu/README.md</code> (Solo Builder)</li><li><code>node_modules/cpd-linux-x64-gnu/cpd-bin/cpd</code> (Solo Builder)</li><li><code>node_modules/cpd-linux-x64-gnu/package.json</code> (Solo Builder)</li><li><code>node_modules/jscpd/README.md</code> (Solo Builder)</li><li><code>node_modules/jscpd/package.json</code> (Solo Builder)</li><li><code>node_modules/jscpd/platform-map.js</code> (Solo Builder)</li><li><code>node_modules/jscpd/run-jscpd.js</code> (Solo Builder)</li><li><code>test-fixtures/dup1.js</code> (Solo Builder)</li><li><code>test-fixtures/dup2.js</code> (Solo Builder)</li><li><code>test-fixtures/bad.ts</code> (Solo Builder)</li><li><code>test-fixtures/supabase/schema.sql</code> (Solo Builder)</li><li><code>test-fixtures/webhooks/route.ts</code> (Solo Builder)</li><li><code>rules/05-supabase-smells.yml</code> (Solo Builder)</li><li><code>rules/03-placeholder-and-stub-smells.yml</code> (Solo Builder)</li><li><code>rules/04-react-node-smells.yml</code> (Solo Builder)</li><li><code>rules/02-error-handling-smells.yml</code> (Solo Builder)</li></ul>
+    </div>
+
+    <div class="card">
+      <h2>Intent Debt (externalized rationale)</h2>
+      <p>Generic/uninformative commit messages: 3.6% of commits<br>
+      Refactor-commit ratio (trend indicator, not scored): 3.6%</p>
+      <p><strong>Commits flagged as generic/uninformative:</strong></p><ul><li><code>7fb3e88</code> Solo Builder: "update"</li><li><code>0933525</code> Solo Builder: "fix"</li><li><code>f44bc42</code> Solo Builder: "wip"</li></ul>
+    </div>
+
+    <footer>Methodology is a v1 heuristic pending calibration against real audited repos.</footer>
+  </div>
+</body>
+</html>
