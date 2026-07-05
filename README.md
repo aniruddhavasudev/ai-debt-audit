@@ -6,13 +6,6 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/aniruddhavasudev/ai-debt-audit/ci.yml?label=CI&logo=githubactions&logoColor=white&color=2ea44f&style=for-the-badge)](https://github.com/aniruddhavasudev/ai-debt-audit/actions/workflows/ci.yml)
 [![AI-Debt Score](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json&style=for-the-badge)](examples/sample-report.md)
-[![License](https://img.shields.io/badge/License-AGPL%20v3-1e90ff?style=for-the-badge)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/aniruddhavasudev/ai-debt-audit?style=for-the-badge&color=f1c40f)](https://github.com/aniruddhavasudev/ai-debt-audit/stargazers)
-
-![Rules](https://img.shields.io/badge/detection_rules-74-ff6b6b?style=for-the-badge)
-![Tools](https://img.shields.io/badge/tools_used-7-9b59b6?style=for-the-badge)
-![Languages](https://img.shields.io/badge/languages-6-16a085?style=for-the-badge)
-![LLM calls](https://img.shields.io/badge/sends_data_to_AI-never-e74c3c?style=for-the-badge)
 
 *The "AI-Debt Score" badge is this repo scanning itself, on a schedule — a live number, not a claim.*
 
