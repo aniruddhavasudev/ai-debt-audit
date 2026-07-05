@@ -45,3 +45,27 @@ jobs:
           test -s /tmp/ci-report.md
           test -s /tmp/ci-report.html
           echo "CLI produced non-empty reports successfully."
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the Docker image
+        run: docker build -t ai-debt-audit:ci-test .
+
+      - name: Smoke-test the built image end to end
+        run: |
+          # test-fixtures/flask is just a subdirectory of this repo, not its
+          # own git repo — git-mine needs real git history to run at all, so
+          # copy the fixture out and give it one, the same way every local
+          # test in this project's history has (mounting the fixture
+          # in-place fails with "is this a git repo with at least one
+          # commit?", which is the tool being correct, not a bug).
+          cp -r test-fixtures/flask /tmp/docker-smoke-test
+          git -C /tmp/docker-smoke-test init -q
+          git -C /tmp/docker-smoke-test -c user.email=ci@example.com -c user.name=CI add -A
+          git -C /tmp/docker-smoke-test -c user.email=ci@example.com -c user.name=CI commit -q -m "smoke test fixture"
+          docker run --rm -v /tmp/docker-smoke-test:/repo ai-debt-audit:ci-test . --out ai-debt-report.md
+          test -s /tmp/docker-smoke-test/ai-debt-report.md
+          echo "Docker image produced a non-empty report successfully."

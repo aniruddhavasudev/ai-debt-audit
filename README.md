@@ -39,6 +39,15 @@ Plus a small custom script (`scripts/git-mine.js`) that mines git log for the st
 
 ## Getting it running
 
+**Option A — Docker, zero local installs:**
+```bash
+docker build -t ai-debt-audit .
+docker run --rm -v /path/to/any/repo:/repo ai-debt-audit . --out ai-debt-report.md
+```
+All six tools ship pre-installed in the image — nothing to `pip install` yourself. One thing to know: any `--out`/`--html`/`--pdf` path needs to point *inside* `/repo` (the mounted volume) or the file vanishes with the container when it exits — `--out ai-debt-report.md` lands in the repo root on your host; `--out /tmp/report.md` would not.
+
+**Option B — local install:**
+
 You'll need these installed first:
 ```bash
 pip install semgrep bandit pip-audit
