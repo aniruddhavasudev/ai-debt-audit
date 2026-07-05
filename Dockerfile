@@ -25,9 +25,15 @@ ENV PATH="/opt/aidebt-venv/bin:${PATH}"
 RUN pip install --no-cache-dir semgrep bandit pip-audit
 
 # gitleaks ships as a single static binary — no package manager needed,
-# resolve "latest" dynamically so this doesn't silently go stale.
+# resolve "latest" dynamically so this doesn't silently go stale. Falls
+# back to a pinned known-good version if the unauthenticated GitHub API
+# call fails or gets rate-limited (60 req/hour per IP — CI runners share
+# IP pools and can exhaust this faster than a single dev machine ever
+# would; this caused a real, reproducible-on-GitHub-but-not-locally CI
+# failure during development).
 RUN set -eux; \
     VERSION=$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4 | sed 's/^v//'); \
+    if [ -z "$VERSION" ]; then VERSION="8.30.1"; echo "Warning: could not resolve latest gitleaks version, falling back to pinned $VERSION"; fi; \
     curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | tar -xz -C /usr/local/bin gitleaks; \
     chmod +x /usr/local/bin/gitleaks
 
