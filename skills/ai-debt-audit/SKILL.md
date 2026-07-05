@@ -5,7 +5,7 @@ description: Scan a repository for AI-generated technical, cognitive, and intent
 
 # ai-debt-audit
 
-Runs six deterministic, fully local tools against a target repo and produces one composite 0-100 AI-Debt Score, broken into technical, cognitive, and intent debt. Nothing calls an LLM and no code leaves the machine — every finding traces to a specific rule and line, which is what makes it usable as evidence (a due-diligence report, a PR gate), not just a vibe check.
+Runs seven deterministic, fully local tools against a target repo and produces one composite 0-100 AI-Debt Score, broken into technical, cognitive, and intent debt. Nothing calls an LLM and no code leaves the machine — every finding traces to a specific rule and line, which is what makes it usable as evidence (a due-diligence report, a PR gate), not just a vibe check.
 
 ## When to use this skill
 

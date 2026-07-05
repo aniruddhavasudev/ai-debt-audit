@@ -124,6 +124,29 @@ test("scoreDependencyVulnerabilities — counts vulnerable packages, not raw CVE
   assert.ok(twoPackagesOneVulnEach.score > onePackageManyVulns.score);
 });
 
+test("scoreDependencyVulnerabilities — merges pip-audit (Python) and npm audit (JS/TS) into one signal", () => {
+  const pipOnly = scoreDependencyVulnerabilities(
+    { dependencies: [{ name: "flask", version: "0.12", vulns: [{ id: "PYSEC-1", fix_versions: [] }] }] },
+    null
+  );
+  assert.equal(pipOnly.vulnerablePackageCount, 1, "pip-only should count just the pip package");
+
+  const npmOnly = scoreDependencyVulnerabilities(null, {
+    vulnerabilities: { lodash: { range: "<4.17.5", severity: "critical", via: ["CVE-2018-1234"], fixAvailable: false } },
+  });
+  assert.equal(npmOnly.vulnerablePackageCount, 1, "npm-only should count just the npm package");
+
+  const both = scoreDependencyVulnerabilities(
+    { dependencies: [{ name: "flask", version: "0.12", vulns: [{ id: "PYSEC-1", fix_versions: [] }] }] },
+    { vulnerabilities: { lodash: { range: "<4.17.5", severity: "critical", via: ["CVE-2018-1234"], fixAvailable: false } } }
+  );
+  assert.equal(both.vulnerablePackageCount, 2, "both ecosystems present should merge into a combined count");
+  assert.ok(
+    both.packages.some((p) => p.ecosystem === "pip") && both.packages.some((p) => p.ecosystem === "npm"),
+    "merged packages should retain which ecosystem each came from"
+  );
+});
+
 test("combineTechnicalDebt — missing tools redistribute weight instead of averaging in a phantom zero", () => {
   // A semgrep-only score of 80 should stay high even though duplication/
   // secrets/bandit/dependencyVulns weren't run — averaging in zeros for
