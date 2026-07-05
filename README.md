@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [![self-scan](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/badge.json)](examples/sample-report.md)
 
-AI assistants ship code fast; the debt ships faster — security shortcuts, secrets buried in git history, files only one person has ever touched, commits that never say why. `ai-debt-audit` scans a repo and turns that into one 0–100 score with every finding traced to a file and line. Fully local, no LLM in the loop, deterministic.
+AI assistants ship code fast; the garbage ships faster. `ai-debt-audit` catches what they leave behind — security shortcuts, secrets buried in git history, files only one person has ever touched, commits that never say why — and turns it into one 0–100 score with every finding traced to a file and line. Fully local, no LLM in the loop, deterministic.
 
 ## What a scan looks like
 
@@ -50,6 +50,8 @@ And a few of the findings behind those numbers, verbatim from the Markdown repor
 ```bash
 npx ai-debt-audit /path/to/repo
 ```
+
+Or, from source in one command: `curl -fsSL https://raw.githubusercontent.com/aniruddhavasudev/ai-debt-audit/main/install.sh | bash`
 
 That's a complete scored scan with nothing installed beyond Node — git-history analysis, duplication, and dependency checks all run; the report states exactly which optional checks were skipped. For the full ruleset (74 AI-debt Semgrep patterns, Python security, secrets in git history):
 
