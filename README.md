@@ -9,10 +9,10 @@
 [![License](https://img.shields.io/badge/License-AGPL%20v3-1e90ff?style=for-the-badge)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/aniruddhavasudev/ai-debt-audit?style=for-the-badge&color=f1c40f)](https://github.com/aniruddhavasudev/ai-debt-audit/stargazers)
 
-![Rules](https://img.shields.io/badge/semgrep_rules-74-ff6b6b?style=for-the-badge&logo=semgrep&logoColor=white)
-![Tools](https://img.shields.io/badge/tools_orchestrated-7-9b59b6?style=for-the-badge)
+![Rules](https://img.shields.io/badge/detection_rules-74-ff6b6b?style=for-the-badge)
+![Tools](https://img.shields.io/badge/tools_used-7-9b59b6?style=for-the-badge)
 ![Languages](https://img.shields.io/badge/languages-6-16a085?style=for-the-badge)
-![LLM calls](https://img.shields.io/badge/LLM_calls-0-e74c3c?style=for-the-badge)
+![LLM calls](https://img.shields.io/badge/sends_data_to_AI-never-e74c3c?style=for-the-badge)
 
 *The "AI-Debt Score" badge is this repo scanning itself, on a schedule — a live number, not a claim.*
 
@@ -28,12 +28,12 @@
 
 <br>
 
-A repo scanner for the mess AI coding assistants leave behind: disabled RLS, auth checks that only exist in the happy path, `debug=True` left on, tutorial-pasted secrets — plus the quieter stuff, one person owning half the codebase, commits that just say "fix."
+AI coding tools like Copilot, Cursor, and ChatGPT can write code fast — but they often leave hidden problems behind: security gaps, shortcuts nobody documented, and code that only one person understands.
 
-Point it at a repo, it runs seven deterministic tools, you get one score and a full breakdown in seconds.
+**ai-debt-audit scans any codebase and gives you one simple score** showing how much of that hidden risk it's carrying — in seconds, without sending your code anywhere.
 
 > [!IMPORTANT]
-> **Fully local.** Nothing calls an LLM. Nothing leaves your machine. Every finding traces to a specific rule and line — evidence, not a vibe check.
+> **100% private.** Your code never leaves your machine, and no AI is used to judge it. Every result points to an exact line in your code, so you can see for yourself — not just trust a black box.
 
 <br>
 
@@ -42,26 +42,26 @@ Point it at a repo, it runs seven deterministic tools, you get one score and a f
 <tr>
 <td width="33%" valign="top" align="center">
 
-### 🔴 Technical debt
+### 🔴 Security & quality
 ![50%](https://img.shields.io/badge/weight-50%25-ff6b6b?style=for-the-badge)
 
-Security holes, duplicated logic, unfinished stubs — 74 custom Semgrep rules + Bandit, pip-audit, npm audit, jscpd.
+Security holes, copy-pasted code, and unfinished work left in place.
 
 </td>
 <td width="33%" valign="top" align="center">
 
-### 🟣 Cognitive debt
+### 🟣 Knowledge risk
 ![25%](https://img.shields.io/badge/weight-25%25-9b59b6?style=for-the-badge)
 
-Knowledge concentration — what happens if the one person who understands this leaves. Measured from real git history.
+What happens if the one person who understands this code leaves.
 
 </td>
 <td width="33%" valign="top" align="center">
 
-### 🟢 Intent debt
+### 🟢 Missing context
 ![25%](https://img.shields.io/badge/weight-25%25-16a085?style=for-the-badge)
 
-Whether anyone wrote down *why*. Proxied from commit quality and refactor cadence.
+Whether anyone ever wrote down *why* the code works the way it does.
 
 </td>
 </tr>
@@ -88,52 +88,11 @@ If you run this and it finds something real, a star helps other people find it t
 
 ## ✅ What it catches
 
-<div align="center">
+In plain terms: things like exposed data, security shortcuts, secrets accidentally left in the code, and knowledge trapped in one person's head.
 
-![Security](https://img.shields.io/badge/🔴_SECURITY-technical_debt-ff6b6b?style=for-the-badge)
+Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects.
 
-</div>
-
-✅ Disabled Supabase Row-Level Security<br/>
-✅ SSTI via Flask `render_template_string`<br/>
-✅ Django `DEBUG=True` left on in production<br/>
-✅ Rails mass-assignment via `params.permit!`<br/>
-✅ Spring `.csrf().disable()` / `permitAll()`<br/>
-✅ CORS wildcard origins (Flask-CORS, Spring `@CrossOrigin`)<br/>
-✅ SQL & command injection (Java, Go, Python)<br/>
-✅ Path traversal via unsanitized file paths<br/>
-✅ XXE, insecure deserialization, trust-all TLS<br/>
-✅ Weak randomness for tokens/secrets<br/>
-✅ Silently swallowed errors (Go's `if err != nil {}`)<br/>
-✅ Stub code (`NotImplementedError`) left in main<br/>
-✅ Hardcoded secrets — current tree *and* full git history<br/>
-✅ Dependency CVEs (pip-audit, npm audit)<br/>
-✅ Copy-paste duplication (jscpd)
-
-<div align="center">
-
-![Process](https://img.shields.io/badge/🟣🟢_PROCESS-cognitive_%2B_intent_debt-9b59b6?style=for-the-badge)
-
-</div>
-
-✅ Bus factor / knowledge concentration from real `git log` history<br/>
-✅ Bot commits excluded from team-size math<br/>
-✅ Team-size damping — fair to solo projects<br/>
-✅ Commit message quality, not just "fix"<br/>
-✅ Refactor cadence vs. pure feature velocity<br/>
-✅ Shallow-clone detection with a live warning
-
-<div align="center">
-
-![Stacks](https://img.shields.io/badge/📦_SUPPORTED-stacks-16a085?style=for-the-badge)
-
-</div>
-
-![Python](https://img.shields.io/badge/Python-Flask%20%7C%20Django-3776ab?style=for-the-badge&logo=python&logoColor=white)
-![Ruby](https://img.shields.io/badge/Ruby-Rails-cc0000?style=for-the-badge&logo=rubyonrails&logoColor=white)
-![JS/TS](https://img.shields.io/badge/JS%2FTS-Next.js%20%7C%20Express-f7df1e?style=for-the-badge&logo=javascript&logoColor=black)
-![Go](https://img.shields.io/badge/Go-00add8?style=for-the-badge&logo=go&logoColor=white)
-![Java](https://img.shields.io/badge/Java-Spring%20Boot-6db33f?style=for-the-badge&logo=spring&logoColor=white)
+**→ See the full, specific list of every check: [docs/WHAT_IT_CATCHES.md](docs/WHAT_IT_CATCHES.md)**
 
 <br>
 
@@ -191,11 +150,11 @@ What each of the seven tools catches and how the score is composed.
 
 ## 📜 License
 
-[AGPL-3.0](LICENSE) — use, modify, and self-host freely, including commercially. If you run a modified version as a network service, you must share your modified source with its users. Deliberate: it stops a silent closed-source fork of a hosted competitor.
+Free to use, modify, and self-host — including commercially. The only rule: if you offer a modified version as a hosted service, you have to share your changes back too. Full details: [LICENSE](LICENSE) (AGPL-3.0).
 
 ## 📍 Where this stands
 
-Scoring weights are a v1 heuristic. A 12-repo pilot batch (real public repos, full git history, no cherry-picking) landed every scored repo in Low/Medium tier with no crashes at real-world scale — see [CALIBRATION_50_REPOS.md](CALIBRATION_50_REPOS.md) for the numbers, and [CALIBRATION.md](CALIBRATION.md) for earlier findings. This is a pilot toward a full 50-repo run, not a finished calibration yet. If a finding looks wrong against your own repo, that's more useful to report than a star.
+This is a new tool and still being fine-tuned. It's been tested against real, popular open-source projects with good results so far — see [CALIBRATION_50_REPOS.md](CALIBRATION_50_REPOS.md) for the details. If a result looks wrong on your own repo, telling us is more useful than a star.
 
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:ff6b6b,50:9b59b6,100:1e90ff&height=100&section=footer" width="100%" alt="footer"/>
