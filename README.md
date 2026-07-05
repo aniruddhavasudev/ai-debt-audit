@@ -78,36 +78,9 @@ Whether anyone wrote down *why*. Proxied from commit quality and refactor cadenc
 
 </div>
 
-```mermaid
-flowchart LR
-    R[("📁 Your repo")] --> S{{"7 local tools"}}
-    S --> T["🔴 Technical<br/>50%"]
-    S --> C["🟣 Cognitive<br/>25%"]
-    S --> I["🟢 Intent<br/>25%"]
-    T --> X(["🎯 Composite<br/>AI-Debt Score"])
-    C --> X
-    I --> X
-
-    classDef repo fill:#1e90ff,stroke:#0b5ed7,color:#fff,stroke-width:2px
-    classDef tools fill:#2c3e50,stroke:#1b2631,color:#fff,stroke-width:2px
-    classDef tech fill:#ff6b6b,stroke:#c0392b,color:#fff,stroke-width:2px
-    classDef cog fill:#9b59b6,stroke:#6c3483,color:#fff,stroke-width:2px
-    classDef intent fill:#16a085,stroke:#0e6655,color:#fff,stroke-width:2px
-    classDef score fill:#f1c40f,stroke:#b7950b,color:#000,stroke-width:3px
-
-    class R repo
-    class S tools
-    class T tech
-    class C cog
-    class I intent
-    class X score
-```
-
 ![demo](assets/demo-terminal.svg)
 
-**Real example:** [`examples/sample-report.md`](examples/sample-report.md) — a scan of a real, public Next.js/Supabase SaaS starter, unedited.
-
-![sample report](assets/sample-report.png)
+**Real example:** a full, unedited scan of a real public Next.js/Supabase SaaS starter — [`examples/sample-report.md`](examples/sample-report.md).
 
 If you run this and it finds something real, a star helps other people find it too 👇
 
