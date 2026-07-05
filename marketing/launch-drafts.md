@@ -52,6 +52,16 @@ Likely correct section: a general/multi-language or "security" category, given t
 
 Also worth checking: `lukehutch/awesome-static-analysis` (a separate, also-active fork) — may be worth a second PR if its README structure differs enough to need a distinct entry placement.
 
+**Target: [sdras/awesome-actions](https://github.com/sdras/awesome-actions)** — the primary, most well-known curated list of GitHub Actions specifically (different audience than the static-analysis lists above — people browsing this list are looking for CI/workflow tooling, not general code-quality tools).
+
+**Suggested entry line:**
+```markdown
+- [ai-debt-audit](https://github.com/aniruddhavasudev/ai-debt-audit) - Scan a repo for AI-generated technical/cognitive/intent debt on every PR. Deterministic (Semgrep, Bandit, pip-audit, jscpd, gitleaks — no LLM calls), uploads SARIF to the Security tab, supports --diff mode for fast PR-scoped scans.
+```
+
+**PR description draft:**
+> Adding ai-debt-audit — a GitHub Action that scans for the specific failure patterns AI coding assistants introduce (disabled RLS, missing auth checks, SSTI, hardcoded secrets, mass assignment) rather than generic code quality. Runs fully local/deterministic, uploads findings as SARIF to the Security tab, and supports `--diff` mode to scope PR checks to just the changed files.
+
 ---
 
 ## What I didn't draft
