@@ -188,30 +188,45 @@ test("scoreCognitiveDebt — a bot author (e.g. github-actions[bot]) does not co
   assert.ok(twoRealHumans.score > 0, "two real humans should partially un-damp the score");
 });
 
-test("scoreIntentDebt — no AI-assisted commits behaves exactly as the old generic-message-only formula", () => {
+test("scoreIntentDebt — a repo with zero AI-assisted commits scores byte-identical to the pre-feature formula", () => {
+  // 5 of 10 commits generic, none AI-assisted at all — must equal the old
+  // 100 * genericMessageRatio formula exactly, not a diluted fraction of it.
   const result = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0 },
+    commitStats: {
+      totalCommits: 10,
+      genericMessageRatio: 0.5,
+      genericMessageCommits: 5,
+      aiAssistedGenericRatio: 0,
+      aiAssistedGenericCommits: 0,
+    },
   });
-  // 100 * (0.5 * 0.7 + 0 * 0.3) = 35
-  assert.equal(result.score, 35);
+  assert.equal(result.score, 50, "must match 100 * genericMessageRatio exactly when the new signal is inactive");
 });
 
 test("scoreIntentDebt — disclosed AI use with well-explained commits is not penalized", () => {
-  // All commits AI-assisted, but none generic — aiAssistedGenericRatio is 0,
-  // so a transparent, well-labeled trailer shouldn't itself raise the score.
+  // All 10 commits AI-assisted, but none generic — a transparent,
+  // well-labeled trailer shouldn't itself raise the score.
   const result = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0, aiAssistedRatio: 1.0, aiAssistedGenericRatio: 0 },
+    commitStats: {
+      totalCommits: 10,
+      genericMessageRatio: 0,
+      genericMessageCommits: 0,
+      aiAssistedRatio: 1.0,
+      aiAssistedGenericRatio: 0,
+      aiAssistedGenericCommits: 0,
+    },
   });
   assert.equal(result.score, 0);
   assert.equal(result.aiAssistedRatio, 1.0);
 });
 
-test("scoreIntentDebt — AI-assisted AND generic commits compound into a higher score than either alone", () => {
+test("scoreIntentDebt — AI-assisted AND generic commits compound into a higher score than the same generic ratio alone", () => {
   const genericOnly = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0 },
+    commitStats: { totalCommits: 10, genericMessageRatio: 0.5, genericMessageCommits: 5, aiAssistedGenericCommits: 0 },
   });
+  // Same 5 generic commits, but 3 of them are also AI-assisted.
   const genericAndAiUnexplained = scoreIntentDebt({
-    commitStats: { genericMessageRatio: 0.5, aiAssistedGenericRatio: 0.5 },
+    commitStats: { totalCommits: 10, genericMessageRatio: 0.5, genericMessageCommits: 5, aiAssistedGenericCommits: 3 },
   });
   assert.ok(
     genericAndAiUnexplained.score > genericOnly.score,
@@ -222,9 +237,12 @@ test("scoreIntentDebt — AI-assisted AND generic commits compound into a higher
 test("scoreIntentDebt — surfaces aiToolCounts and aiAssistedCommitList unchanged for reporting", () => {
   const result = scoreIntentDebt({
     commitStats: {
+      totalCommits: 10,
       genericMessageRatio: 0,
+      genericMessageCommits: 0,
       aiAssistedRatio: 0.4,
       aiAssistedGenericRatio: 0,
+      aiAssistedGenericCommits: 0,
       aiAssistedCommits: 2,
       aiToolCounts: { "Claude Code": 2 },
       aiAssistedCommitList: [{ hash: "abc1234", author: "Dev", tool: "Claude Code", subject: "feat: x" }],
