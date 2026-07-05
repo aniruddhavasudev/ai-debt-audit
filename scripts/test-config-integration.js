@@ -31,6 +31,19 @@ function fail(message) {
   process.exit(1);
 }
 
+// excludePaths/ignoreRules only ever apply to Semgrep/Bandit findings (the
+// Technical Debt section) — git-mine and jscpd are documented as repo-wide
+// regardless of exclusions (see docs/USAGE.md's --diff flag), so a file can
+// legitimately still be named in the Cognitive Debt "files only one person
+// has touched" list, or a jscpd clone pair, after being excluded from
+// Technical Debt. Scope the check to that section instead of the whole
+// report so this test verifies the actual contract, not an accidental one.
+function technicalDebtSection(report) {
+  const start = report.indexOf("## Technical Debt");
+  const end = report.indexOf("\n## ", start + 1);
+  return report.slice(start, end === -1 ? undefined : end);
+}
+
 function main() {
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), "aidebt-config-test-"));
   fs.cpSync(FIXTURE_SOURCE, workDir, { recursive: true });
@@ -45,16 +58,18 @@ function main() {
   const baselineOut = path.join(workDir, "baseline.md");
   execFileSync("node", [CLI, workDir, "--out", baselineOut, "--html", ""], { stdio: "ignore" });
   const baseline = fs.readFileSync(baselineOut, "utf8");
-  if (!baseline.includes("app.py")) {
+  if (!technicalDebtSection(baseline).includes("app.py")) {
     fail("baseline scan (no config) didn't flag app.py at all — fixture or CLI itself is broken, not just config filtering");
   }
 
-  // Now exclude app.py via .aidebtrc.json and confirm its findings disappear.
+  // Now exclude app.py via .aidebtrc.json and confirm its findings disappear
+  // from Technical Debt specifically (it may still legitimately appear
+  // elsewhere — see the comment on technicalDebtSection()).
   fs.writeFileSync(path.join(workDir, ".aidebtrc.json"), JSON.stringify({ excludePaths: ["app.py"] }));
   const excludedOut = path.join(workDir, "excluded.md");
   execFileSync("node", [CLI, workDir, "--out", excludedOut, "--html", ""], { stdio: "ignore" });
   const excluded = fs.readFileSync(excludedOut, "utf8");
-  if (excluded.includes("app.py")) {
+  if (technicalDebtSection(excluded).includes("app.py")) {
     fail("excludePaths: [\"app.py\"] did not remove app.py's findings — the bug this test exists to catch has regressed");
   }
 
@@ -66,7 +81,7 @@ function main() {
   const ignoredOut = path.join(workDir, "ignored.md");
   execFileSync("node", [CLI, workDir, "--out", ignoredOut, "--html", ""], { stdio: "ignore" });
   const ignored = fs.readFileSync(ignoredOut, "utf8");
-  if (ignored.includes("ai-debt-flask-debug-true")) {
+  if (technicalDebtSection(ignored).includes("ai-debt-flask-debug-true")) {
     fail("ignoreRules: [\"ai-debt-flask-debug-true\"] did not remove that rule's findings");
   }
 

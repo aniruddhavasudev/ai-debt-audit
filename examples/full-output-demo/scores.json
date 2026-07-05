@@ -1,0 +1,882 @@
+{
+  "composite": 24,
+  "tier": "Low",
+  "technical": {
+    "score": 26,
+    "byCategory": {
+      "error_handling": {
+        "count": 5,
+        "weight": 20
+      },
+      "incomplete_implementation": {
+        "count": 23,
+        "weight": 23
+      },
+      "security": {
+        "count": 1,
+        "weight": 3
+      }
+    },
+    "totalFindings": 29,
+    "totalWeight": 46,
+    "blendedScore": 21
+  },
+  "duplication": {
+    "score": 14,
+    "percentage": 2.731781121291082,
+    "duplicatedLines": 325,
+    "totalLines": 11897,
+    "clones": 48,
+    "clonePairs": [
+      {
+        "firstFile": ".github/workflows/ci.yml",
+        "firstStart": 27,
+        "firstEnd": 33,
+        "secondFile": ".github/workflows/self-scan.yml",
+        "secondStart": 37,
+        "secondEnd": 43,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 5,
+        "firstEnd": 20,
+        "secondFile": "report.html",
+        "secondStart": 5,
+        "secondEnd": 20,
+        "lines": 16
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 20,
+        "firstEnd": 25,
+        "secondFile": "report.html",
+        "secondStart": 20,
+        "secondEnd": 25,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 29,
+        "firstEnd": 57,
+        "secondFile": "report.html",
+        "secondStart": 29,
+        "secondEnd": 57,
+        "lines": 29
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 63,
+        "firstEnd": 73,
+        "secondFile": "report.html",
+        "secondStart": 63,
+        "secondEnd": 73,
+        "lines": 11
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 74,
+        "firstEnd": 79,
+        "secondFile": "report.html",
+        "secondStart": 74,
+        "secondEnd": 79,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 80,
+        "firstEnd": 85,
+        "secondFile": "report.html",
+        "secondStart": 80,
+        "secondEnd": 85,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 96,
+        "firstEnd": 103,
+        "secondFile": "report.html",
+        "secondStart": 96,
+        "secondEnd": 103,
+        "lines": 8
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 103,
+        "firstEnd": 109,
+        "secondFile": "report.html",
+        "secondStart": 109,
+        "secondEnd": 115,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 103,
+        "firstEnd": 109,
+        "secondFile": "report.html",
+        "secondStart": 115,
+        "secondEnd": 121,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 103,
+        "firstEnd": 109,
+        "secondFile": "report.html",
+        "secondStart": 121,
+        "secondEnd": 127,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 103,
+        "firstEnd": 108,
+        "secondFile": "report.html",
+        "secondStart": 127,
+        "secondEnd": 132,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 104,
+        "firstEnd": 109,
+        "secondFile": "docs/index.html",
+        "secondStart": 110,
+        "secondEnd": 115,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 104,
+        "firstEnd": 109,
+        "secondFile": "docs/index.html",
+        "secondStart": 122,
+        "secondEnd": 127,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 109,
+        "firstEnd": 114,
+        "secondFile": "docs/index.html",
+        "secondStart": 115,
+        "secondEnd": 120,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 109,
+        "firstEnd": 115,
+        "secondFile": "docs/index.html",
+        "secondStart": 127,
+        "secondEnd": 133,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 116,
+        "firstEnd": 121,
+        "secondFile": "docs/index.html",
+        "secondStart": 134,
+        "secondEnd": 139,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 116,
+        "firstEnd": 121,
+        "secondFile": "report.html",
+        "secondStart": 134,
+        "secondEnd": 139,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 126,
+        "secondFile": "docs/index.html",
+        "secondStart": 133,
+        "secondEnd": 138,
+        "lines": 6
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "docs/index.html",
+        "secondStart": 139,
+        "secondEnd": 145,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "docs/index.html",
+        "secondStart": 145,
+        "secondEnd": 151,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "docs/index.html",
+        "secondStart": 151,
+        "secondEnd": 157,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 139,
+        "secondEnd": 145,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 145,
+        "secondEnd": 151,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 151,
+        "secondEnd": 157,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 157,
+        "secondEnd": 163,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 163,
+        "secondEnd": 169,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 169,
+        "secondEnd": 175,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 175,
+        "secondEnd": 181,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 181,
+        "secondEnd": 187,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 187,
+        "secondEnd": 193,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 193,
+        "secondEnd": 199,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 199,
+        "secondEnd": 205,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 205,
+        "secondEnd": 211,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 211,
+        "secondEnd": 217,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 217,
+        "secondEnd": 223,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 223,
+        "secondEnd": 229,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 229,
+        "secondEnd": 235,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 235,
+        "secondEnd": 241,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 241,
+        "secondEnd": 247,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 247,
+        "secondEnd": 253,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 253,
+        "secondEnd": 259,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 259,
+        "secondEnd": 265,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 127,
+        "secondFile": "report.html",
+        "secondStart": 265,
+        "secondEnd": 271,
+        "lines": 7
+      },
+      {
+        "firstFile": "docs/index.html",
+        "firstStart": 121,
+        "firstEnd": 131,
+        "secondFile": "report.html",
+        "secondStart": 271,
+        "secondEnd": 283,
+        "lines": 11
+      },
+      {
+        "firstFile": "rules/01-security-smells.yml",
+        "firstStart": 2,
+        "firstEnd": 12,
+        "secondFile": "rules/08-go-smells.yml",
+        "secondStart": 103,
+        "secondEnd": 113,
+        "lines": 11
+      },
+      {
+        "firstFile": "rules/01-security-smells.yml",
+        "firstStart": 53,
+        "firstEnd": 62,
+        "secondFile": "rules/01-security-smells.yml",
+        "secondStart": 68,
+        "secondEnd": 77,
+        "lines": 10
+      },
+      {
+        "firstFile": "test-fixtures/dup1.js",
+        "firstStart": 1,
+        "firstEnd": 7,
+        "secondFile": "test-fixtures/dup2.js",
+        "secondStart": 1,
+        "secondEnd": 7,
+        "lines": 7
+      }
+    ]
+  },
+  "historicalSecrets": {
+    "score": 50,
+    "leakCount": 2,
+    "leaks": [
+      {
+        "rule": "generic-api-key",
+        "file": "test-fixtures/rails/config/secrets.yml",
+        "line": 2,
+        "commit": "560b7622"
+      },
+      {
+        "rule": "aws-access-token",
+        "file": "test-fixtures/bad.py",
+        "line": 31,
+        "commit": "a933837c"
+      }
+    ]
+  },
+  "bandit": {
+    "score": 0,
+    "totalFindings": 0,
+    "byCategory": {},
+    "top": []
+  },
+  "dependencyVulns": {
+    "score": 0,
+    "vulnerablePackageCount": 0,
+    "totalVulnCount": 0,
+    "packages": []
+  },
+  "cognitive": {
+    "score": 49,
+    "busFactorRiskRatio": 0.9775280898876404,
+    "totalAuthors": 2,
+    "dampingFactor": 0.5,
+    "isShallowClone": false,
+    "totalFilesTracked": 89,
+    "singleAuthorFiles": 87,
+    "riskyFiles": [
+      {
+        "file": "action.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "bin/aidebt-scan.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "docs/USAGE.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "scripts/score.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "scripts/git-mine.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "scripts/test-config-integration.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "CONTRIBUTING.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "skills/ai-debt-audit/SKILL.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".claude-plugin/plugin.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "package.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "docs/WHAT_IT_CATCHES.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "CALIBRATION_50_REPOS.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/caddyserver_caddy.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/calcom_cal.com.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/encode_django-rest-framework.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/forem_forem.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/gin-gonic_gin.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/gofiber_fiber.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/gothinkster_realworld.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/miguelgrinberg_flasky.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/pallets_flask.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/shadcn-ui_taxonomy.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/spring-projects_spring-petclinic.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "calibration-pilot-results/wagtail_wagtail.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "docs/TOOLS.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".aidebtrc.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".github/workflows/self-scan.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".gitattributes",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".github/workflows/ci.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/09-java-spring-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/README.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "scripts/score.test.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "scripts/test-rules.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/java/src/main/java/com/example/InsecureClient.java",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/java/src/main/java/com/example/SecurityConfig.java",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/java/src/main/java/com/example/UserService.java",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/08-go-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/go/main.go",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "Dockerfile",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "CALIBRATION.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "assets/logo.svg",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "marketing/launch-drafts.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "marketing/release-notes-v1.4.0.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "LICENSE",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/07-rails-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/rails/app/controllers/users_controller.rb",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/rails/config/initializers/cors.rb",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/rails/config/secrets.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".dockerignore",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".gitignore",
+        "author": "Solo Builder"
+      },
+      {
+        "file": ".github/workflows/ai-debt-check.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/01-security-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "assets/demo-terminal.png",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "assets/demo-terminal.svg",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "assets/sample-report.png",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "docs/index.html",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "examples/sample-report.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "ai-debt-audit",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "ai-debt-report.html",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "ai-debt-report.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/flask/requirements.txt",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/06-django-flask-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/django/myproject/settings.py",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/django/views.py",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/flask/app.py",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "scripts/colors.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/.package-lock.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "package-lock.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/bad.py",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/.bin/jscpd",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/cpd-linux-x64-gnu/LICENSE",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/cpd-linux-x64-gnu/README.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/cpd-linux-x64-gnu/cpd-bin/cpd",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/cpd-linux-x64-gnu/package.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/jscpd/README.md",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/jscpd/package.json",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/jscpd/platform-map.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "node_modules/jscpd/run-jscpd.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/dup1.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/dup2.js",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/bad.ts",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/supabase/schema.sql",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "test-fixtures/webhooks/route.ts",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/05-supabase-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/03-placeholder-and-stub-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/04-react-node-smells.yml",
+        "author": "Solo Builder"
+      },
+      {
+        "file": "rules/02-error-handling-smells.yml",
+        "author": "Solo Builder"
+      }
+    ]
+  },
+  "intent": {
+    "score": 4,
+    "genericMessageRatio": 0.03614457831325301,
+    "refactorRatio": 0.03614457831325301,
+    "note": "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction.",
+    "genericCommits": [
+      {
+        "hash": "7fb3e88",
+        "author": "Solo Builder",
+        "subject": "update"
+      },
+      {
+        "hash": "0933525",
+        "author": "Solo Builder",
+        "subject": "fix"
+      },
+      {
+        "hash": "f44bc42",
+        "author": "Solo Builder",
+        "subject": "wip"
+      }
+    ]
+  },
+  "weights": {
+    "technical": 0.5,
+    "cognitive": 0.25,
+    "intent": 0.25
+  }
+}

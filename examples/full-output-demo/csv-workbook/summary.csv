@@ -1,0 +1,5 @@
+Category,Score (0-100),Risk Level,What This Means
+Overall,24,Low,"The overall AI-Debt score, combining all three categories below."
+Security & Quality,21,Low,"Security holes, copy-pasted code, and unfinished work left in place. See technical-debt.csv for specifics."
+Knowledge Risk,49,Medium,What happens if the one person who understands this code leaves. See knowledge-risk.csv for specifics.
+Missing Context,4,Low,Whether anyone wrote down why the code works the way it does. See missing-context.csv for specifics.

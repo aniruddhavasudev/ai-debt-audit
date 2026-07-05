@@ -185,6 +185,18 @@ function scoreDuplication(jscpdResults) {
     duplicatedLines: jscpdResults.statistics?.total?.duplicatedLines ?? 0,
     totalLines: jscpdResults.statistics?.total?.lines ?? 0,
     clones: jscpdResults.statistics?.total?.clones ?? 0,
+    // Every clone pair, not just the aggregate count — jscpd already knows
+    // exactly which two files/line-ranges match, and throwing that away
+    // left the report saying "13 clone pairs" with no way to find them.
+    clonePairs: (jscpdResults.duplicates || []).map((d) => ({
+      firstFile: d.firstFile?.name,
+      firstStart: d.firstFile?.start,
+      firstEnd: d.firstFile?.end,
+      secondFile: d.secondFile?.name,
+      secondStart: d.secondFile?.start,
+      secondEnd: d.secondFile?.end,
+      lines: d.lines,
+    })),
   };
 }
 
@@ -225,9 +237,11 @@ function scoreBandit(banditResults, totalFilesScanned) {
     score,
     totalFindings: findings.length,
     byCategory,
+    // Every finding, not a "top 5" sample — see the comment on topFindings()
+    // above for why silent truncation is the wrong default for a report
+    // meant to be used as evidence.
     top: [...findings]
       .sort((a, b) => (BANDIT_SEVERITY_WEIGHT[b.issue_severity] ?? 0) - (BANDIT_SEVERITY_WEIGHT[a.issue_severity] ?? 0))
-      .slice(0, 5)
       .map((f) => ({
         testId: f.test_id,
         severity: f.issue_severity,
@@ -346,6 +360,8 @@ function scoreIntentDebt(gitMine) {
     genericMessageRatio,
     refactorRatio: gitMine.commitStats?.refactorRatio ?? 0,
     note: "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction.",
+    // Every commit actually flagged generic, not just the percentage.
+    genericCommits: gitMine.commitStats?.genericCommitList ?? [],
   };
 }
 
@@ -373,11 +389,14 @@ function renderShieldsBadge(composite, tier) {
   };
 }
 
-function topFindings(semgrepResults, limit = 10) {
+// Every finding, not a "top N" sample — the report is meant to be usable
+// as evidence (a due-diligence artifact, a PR gate), and evidence that
+// silently drops findings past an arbitrary cutoff isn't trustworthy.
+// Still sorted by severity weight so the most serious findings read first.
+function topFindings(semgrepResults) {
   const findings = semgrepResults.results || [];
   return [...findings]
     .sort((a, b) => (b.extra?.metadata?.weight ?? 0) - (a.extra?.metadata?.weight ?? 0))
-    .slice(0, limit)
     .map((f) => ({
       rule: f.check_id.split(".").pop(),
       severity: f.extra?.severity,
@@ -479,6 +498,155 @@ function renderSarif(semgrepResults, banditResults, repoRoot) {
   };
 }
 
+// CSV is the "basic Excel format" ask — it opens natively in Excel, Google
+// Sheets, and Numbers with zero setup, and needs no new dependency (a
+// hand-rolled RFC 4180 quoting rule is a few lines; a full library would be
+// overkill here). A real multi-tab .xlsx "workbook" would need an actual
+// XLSX-writing dependency, which isn't worth it for what's really just a
+// folder of related tables — so "workbook" here means a small directory of
+// CSV files (one per debt category, plus a summary) that a spreadsheet
+// user can open as a set, not one binary file with tabs.
+function csvEscape(value) {
+  const s = value === null || value === undefined ? "" : String(value);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function renderCsvTable(header, rows) {
+  return [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n") + "\n";
+}
+
+// One flat findings-oriented severity vocabulary (Critical/High/Medium/Low/
+// Info) instead of every tool's own raw scale (Semgrep's ERROR/WARNING/INFO,
+// Bandit's HIGH/MEDIUM/LOW) — a spreadsheet mixing both isn't "structured
+// for a layman," it's two different codes a reader has to already know.
+const SEMGREP_SEVERITY_LABEL = { ERROR: "Critical", WARNING: "High", INFO: "Low" };
+const BANDIT_SEVERITY_LABEL = { HIGH: "Critical", MEDIUM: "Medium", LOW: "Low" };
+
+const DETECTED_BY_LABEL = {
+  semgrep: "Code Scanner",
+  bandit: "Python Security Scanner",
+  gitleaks: "Secret Scanner",
+  pip: "Dependency Checker",
+  npm: "Dependency Checker",
+  jscpd: "Duplicate Code Checker",
+};
+
+function renderCsvWorkbook({ composite, tier, technical, cognitive, intent, top, bandit, historicalSecrets, dependencyVulns, duplication }) {
+  const files = {};
+
+  // --- summary.csv — the entry point: one row per category, plain English ---
+  files["summary.csv"] = renderCsvTable(
+    ["Category", "Score (0-100)", "Risk Level", "What This Means"],
+    [
+      [
+        "Overall",
+        composite,
+        tier,
+        `The overall AI-Debt score, combining all three categories below.`,
+      ],
+      [
+        "Security & Quality",
+        technical.blendedScore,
+        riskTier(technical.blendedScore),
+        `Security holes, copy-pasted code, and unfinished work left in place. See technical-debt.csv for specifics.`,
+      ],
+      [
+        "Knowledge Risk",
+        cognitive.score,
+        riskTier(cognitive.score),
+        `What happens if the one person who understands this code leaves. See knowledge-risk.csv for specifics.`,
+      ],
+      [
+        "Missing Context",
+        intent.score,
+        riskTier(intent.score),
+        `Whether anyone wrote down why the code works the way it does. See missing-context.csv for specifics.`,
+      ],
+    ]
+  );
+
+  // --- technical-debt.csv — every security/quality finding, one plain vocabulary ---
+  const technicalRows = [];
+  for (const f of top) {
+    technicalRows.push([
+      SEMGREP_SEVERITY_LABEL[f.severity] || f.severity || "",
+      DETECTED_BY_LABEL.semgrep,
+      f.rule || "",
+      f.path || "",
+      f.line ?? "",
+      f.message || "",
+    ]);
+  }
+  if (bandit) {
+    for (const f of bandit.top) {
+      technicalRows.push([
+        BANDIT_SEVERITY_LABEL[f.severity] || f.severity || "",
+        DETECTED_BY_LABEL.bandit,
+        f.testId || "",
+        f.file || "",
+        f.line ?? "",
+        f.text || "",
+      ]);
+    }
+  }
+  if (historicalSecrets) {
+    for (const l of historicalSecrets.leaks) {
+      technicalRows.push([
+        "Critical",
+        DETECTED_BY_LABEL.gitleaks,
+        l.rule || "",
+        l.file || "",
+        l.line ?? "",
+        `A secret was committed to git history (commit ${l.commit || "unknown"}) — still recoverable even though it may be deleted now.`,
+      ]);
+    }
+  }
+  if (dependencyVulns) {
+    for (const p of dependencyVulns.packages) {
+      technicalRows.push([
+        "High",
+        DETECTED_BY_LABEL[p.ecosystem] || "Dependency Checker",
+        p.vulnIds[0] || "",
+        p.name || "",
+        "",
+        `${p.name}@${p.version} has known security vulnerabilities (${p.vulnIds.join(", ")})${p.fixVersions.length ? ` — fix available: ${p.fixVersions.join(", ")}` : ""}.`,
+      ]);
+    }
+  }
+  if (duplication) {
+    for (const p of duplication.clonePairs) {
+      technicalRows.push([
+        "Low",
+        DETECTED_BY_LABEL.jscpd,
+        "duplicate-code",
+        p.firstFile || "",
+        p.firstStart ?? "",
+        `${p.lines} lines duplicated from ${p.secondFile}:${p.secondStart}-${p.secondEnd} — copy-pasted rather than shared/reused code.`,
+      ]);
+    }
+  }
+  files["technical-debt.csv"] = renderCsvTable(["Severity", "Detected By", "Issue Type", "File", "Line", "What This Means"], technicalRows);
+
+  // --- knowledge-risk.csv — files only one person has ever touched ---
+  const knowledgeRows = (cognitive.riskyFiles || []).map((r) => [
+    r.file || "",
+    r.author || "",
+    "If this person leaves, nobody else has touched this file — it's a single point of failure.",
+  ]);
+  files["knowledge-risk.csv"] = renderCsvTable(["File", "Only Ever Edited By", "What This Means"], knowledgeRows);
+
+  // --- missing-context.csv — commits that don't explain why a change was made ---
+  const contextRows = (intent.genericCommits || []).map((c) => [
+    c.hash || "",
+    c.author || "",
+    c.subject || "",
+    `The commit message ("${c.subject}") doesn't explain why this change was made — future readers (human or AI) have to guess.`,
+  ]);
+  files["missing-context.csv"] = renderCsvTable(["Commit", "Author", "Commit Message", "What This Means"], contextRows);
+
+  return files;
+}
+
 function renderMarkdown({ composite, tier, technical, duplication, historicalSecrets, bandit, dependencyVulns, cognitive, intent, top, repoPath, weights }) {
   const lines = [];
   lines.push(`# AI-Debt Report — ${repoPath}`);
@@ -496,7 +664,7 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
     lines.push(`- **${category}**: ${stats.count} findings (weighted ${stats.weight})`);
   }
 
-  lines.push(`\n### Top findings (by severity weight)\n`);
+  lines.push(`\n### All findings (sorted by severity weight)\n`);
   for (const f of top) {
     lines.push(`- [${f.severity}] \`${f.rule}\` — ${f.path}:${f.line} — ${f.message}`);
     if (f.dampenedReason) lines.push(`  - ⚠ *${f.dampenedReason}*`);
@@ -526,6 +694,9 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
   if (duplication) {
     lines.push(`\n### Duplication (jscpd)\n`);
     lines.push(`- ${duplication.percentage.toFixed(1)}% duplicated lines (${duplication.duplicatedLines}/${duplication.totalLines}) across ${duplication.clones} clone pairs — sub-score ${duplication.score}/100`);
+    for (const p of duplication.clonePairs) {
+      lines.push(`  - ${p.lines} lines: ${p.firstFile}:${p.firstStart}-${p.firstEnd} ↔ ${p.secondFile}:${p.secondStart}-${p.secondEnd}`);
+    }
   }
 
   if (historicalSecrets) {
@@ -554,10 +725,22 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
       `- ⚠ *Score damped heavily — with only ${cognitive.totalAuthors} total contributor(s), single-author-per-file is structural, not a debt signal.*`
     );
   }
+  if (cognitive.riskyFiles?.length) {
+    lines.push(`\nFiles only one person has ever touched:\n`);
+    for (const r of cognitive.riskyFiles) {
+      lines.push(`  - ${r.file} (${r.author})`);
+    }
+  }
 
   lines.push(`\n## Intent Debt (externalized rationale)\n`);
   lines.push(`- Generic/uninformative commit messages: ${(intent.genericMessageRatio * 100).toFixed(1)}% of commits`);
   lines.push(`- Refactor-commit ratio (trend indicator, not scored): ${(intent.refactorRatio * 100).toFixed(1)}%`);
+  if (intent.genericCommits?.length) {
+    lines.push(`\nCommits flagged as generic/uninformative:\n`);
+    for (const c of intent.genericCommits) {
+      lines.push(`  - \`${c.hash}\` ${c.author}: "${c.subject}"`);
+    }
+  }
 
   lines.push(`\n---\n*Methodology is a v1 heuristic pending calibration against real audited repos — see scripts/score.js for exact weights and formulas.*`);
 
@@ -687,7 +870,7 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
     </div>
 
     <div class="card">
-      <h2>Top Findings</h2>
+      <h2>All Findings</h2>
       <table>
         <thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Detail</th></tr></thead>
         <tbody>${findingsRows}</tbody>
@@ -717,7 +900,9 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
 
     ${
       duplication
-        ? `<div class="card"><h2>Duplication (jscpd)</h2><p>${duplication.percentage.toFixed(1)}% duplicated lines (${duplication.duplicatedLines}/${duplication.totalLines}) across ${duplication.clones} clone pairs — sub-score ${duplication.score}/100</p></div>`
+        ? `<div class="card"><h2>Duplication (jscpd)</h2><p>${duplication.percentage.toFixed(1)}% duplicated lines (${duplication.duplicatedLines}/${duplication.totalLines}) across ${duplication.clones} clone pairs — sub-score ${duplication.score}/100</p>
+           ${duplication.clonePairs.length ? `<ul>${duplication.clonePairs.map((p) => `<li>${p.lines} lines: <code>${escapeHtml(p.firstFile)}:${p.firstStart}-${p.firstEnd}</code> ↔ <code>${escapeHtml(p.secondFile)}:${p.secondStart}-${p.secondEnd}</code></li>`).join("")}</ul>` : ""}
+           </div>`
         : ""
     }
 
@@ -727,7 +912,9 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
             historicalSecrets.leakCount === 0
               ? "None found — sub-score 0/100"
               : `<strong style="color:#dc2626">${historicalSecrets.leakCount} leaked secret(s) found in git history</strong> — sub-score ${historicalSecrets.score}/100`
-          }</p></div>`
+          }</p>
+           ${historicalSecrets.leakCount > 0 ? `<ul>${historicalSecrets.leaks.map((l) => `<li><code>${escapeHtml(l.rule)}</code> in <code>${escapeHtml(l.file)}:${l.line}</code> (commit ${escapeHtml(l.commit)})</li>`).join("")}</ul>` : ""}
+           </div>`
         : ""
     }
 
@@ -741,12 +928,14 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
       <p>Bus-factor risk ratio (raw): ${(cognitive.busFactorRiskRatio * 100).toFixed(1)}% of tracked files have had only one author ever<br>
       Total distinct authors: ${cognitive.totalAuthors} (team-size damping factor: ${cognitive.dampingFactor.toFixed(2)})</p>
       ${cognitive.totalAuthors <= 2 ? `<p class="dampened">⚠ Score damped heavily — with only ${cognitive.totalAuthors} total contributor(s), single-author-per-file is structural, not a debt signal.</p>` : ""}
+      ${cognitive.riskyFiles?.length ? `<p><strong>Files only one person has ever touched:</strong></p><ul>${cognitive.riskyFiles.map((r) => `<li><code>${escapeHtml(r.file)}</code> (${escapeHtml(r.author)})</li>`).join("")}</ul>` : ""}
     </div>
 
     <div class="card">
       <h2>Intent Debt (externalized rationale)</h2>
       <p>Generic/uninformative commit messages: ${(intent.genericMessageRatio * 100).toFixed(1)}% of commits<br>
       Refactor-commit ratio (trend indicator, not scored): ${(intent.refactorRatio * 100).toFixed(1)}%</p>
+      ${intent.genericCommits?.length ? `<p><strong>Commits flagged as generic/uninformative:</strong></p><ul>${intent.genericCommits.map((c) => `<li><code>${escapeHtml(c.hash)}</code> ${escapeHtml(c.author)}: "${escapeHtml(c.subject)}"</li>`).join("")}</ul>` : ""}
     </div>
 
     <footer>Methodology is a v1 heuristic pending calibration against real audited repos.</footer>
@@ -763,7 +952,7 @@ function main() {
       "Usage: node score.js --semgrep semgrep.json --gitmine gitmine.json " +
         "[--jscpd jscpd-report.json] [--gitleaks gitleaks.json] [--bandit bandit.json] " +
         "[--pipaudit pip-audit.json] [--npmaudit npm-audit.json] [--out report.md] [--html report.html] " +
-        "[--json raw.json] [--sarif results.sarif] [--fail-on-score N] [--files-scanned N]"
+        "[--json raw.json] [--sarif results.sarif] [--csv findings.csv] [--fail-on-score N] [--files-scanned N]"
     );
     process.exit(1);
   }
@@ -902,6 +1091,17 @@ function main() {
     const sarif = renderSarif(semgrepResults, banditResults, repoRoot);
     fs.writeFileSync(args.sarif, JSON.stringify(sarif, null, 2));
     console.error(`SARIF written to ${args.sarif}`);
+  }
+
+  if (args.csv) {
+    // args.csv is a directory, not a single file — see renderCsvWorkbook's
+    // comment for why a real multi-tab .xlsx isn't what this builds.
+    fs.mkdirSync(args.csv, { recursive: true });
+    const workbook = renderCsvWorkbook({ composite, tier, technical, cognitive, intent, top, bandit, historicalSecrets, dependencyVulns, duplication });
+    for (const [filename, content] of Object.entries(workbook)) {
+      fs.writeFileSync(path.join(args.csv, filename), content);
+    }
+    console.error(`CSV workbook written to ${args.csv}/ (summary.csv, technical-debt.csv, knowledge-risk.csv, missing-context.csv)`);
   }
 
   // Non-zero exit lets CI treat "AI-debt score too high" as a failed check,
