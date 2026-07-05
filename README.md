@@ -16,28 +16,28 @@
 
 ---
 
-A repo scanner for the specific mess that AI coding assistants leave behind: disabled RLS policies, auth checks that only exist in the happy path, `debug=True` still on, secrets copy-pasted from a tutorial, and the quieter stuff — one person owning half the codebase, commits that just say "fix," nobody writing down why anything is the way it is.
+A repo scanner for the mess AI coding assistants leave behind: disabled RLS, auth checks that only exist in the happy path, `debug=True` left on, tutorial-pasted secrets — plus the quieter stuff, one person owning half the codebase, commits that just say "fix."
 
-Point it at a repo, it runs seven tools, you get one score and a full breakdown. Takes a few seconds. Fully local — nothing calls an LLM, nothing leaves your machine.
+Point it at a repo, it runs seven tools, you get one score and a full breakdown. Fully local — nothing calls an LLM, nothing leaves your machine.
 
 <table>
 <tr>
 <td width="33%" valign="top">
 
 ### 🔧 Technical debt
-The code itself — security holes, duplicated logic, unfinished stubs. Caught by 74 custom Semgrep rules plus Bandit, pip-audit, npm audit, and jscpd.
+Security holes, duplicated logic, unfinished stubs. 74 custom Semgrep rules + Bandit, pip-audit, npm audit, jscpd.
 
 </td>
 <td width="33%" valign="top">
 
 ### 🧠 Cognitive debt
-Knowledge concentration — what happens if the one person who understands this leaves. Measured from real git history, not a guess.
+Knowledge concentration — what happens if the one person who understands this leaves. Measured from real git history.
 
 </td>
 <td width="33%" valign="top">
 
 ### 📝 Intent debt
-Whether anyone wrote down *why*, so the next engineer (or the next AI agent) doesn't have to guess. Proxied from commit quality and refactor cadence.
+Whether anyone wrote down *why*. Proxied from commit quality and refactor cadence.
 
 </td>
 </tr>
@@ -45,74 +45,47 @@ Whether anyone wrote down *why*, so the next engineer (or the next AI agent) doe
 
 ![demo](assets/demo-terminal.svg)
 
-Real example: [`examples/sample-report.md`](examples/sample-report.md) — a scan of a real, public Next.js/Supabase SaaS starter, unedited. Nothing here is a mockup.
+Real example: [`examples/sample-report.md`](examples/sample-report.md) — a scan of a real, public Next.js/Supabase SaaS starter, unedited.
 
 ![sample report](assets/sample-report.png)
 
 If you run this and it finds something real, a star helps other people find it too 👇
 
-## Why this exists
+## The seven tools
 
-By some counts, roughly 10,000 startups shipped a production app built mostly by an AI assistant in the last year or so. More than 8,000 of them are now looking at a partial rebuild. That gap — between "it works" and "it's fine to build on" — is what this tries to measure before it becomes a $50k+ surprise.
-
-I built it deterministic on purpose. Every finding traces back to a specific rule and a specific line — no "the model thinks this looks risky," because that's not something you can hand to a VC doing diligence or argue with when it's wrong. (And it is sometimes wrong — see the note below about the auth-check rule.) Nothing in this pipeline calls out to an LLM. Nothing leaves your machine.
-
-## The seven tools, and what each one actually catches
-
-| Tool | What it's for |
+| Tool | Catches |
 |---|---|
-| Semgrep, 74 custom rules | The AI-specific stuff: disabled Supabase RLS, Flask SSTI via `render_template_string`, Django `DEBUG=True`, Rails mass-assignment via `params.permit!`, Go's `if err != nil {}` swallowed silently, Spring's `.csrf().disable()`, `NotImplementedError` stubs that made it to main |
-| Semgrep's own `p/django` + `p/flask` + `p/golang` + `p/java` packs | Didn't want to hand-write every framework-specific rule when Semgrep's community registry already covers a lot of this better than I would (checked first — `p/spring` doesn't actually exist as a pack, so Spring gets custom rules only) |
-| Bandit | Python security linting — hardcoded passwords, `pickle.loads`, that kind of thing |
-| pip-audit | Checks your actual pinned Python dependency versions against known CVEs |
-| npm audit | Same thing for JS/TS — runs directly against `package-lock.json`, never installs the target's dependencies (so it never executes an untrusted repo's install scripts) |
+| Semgrep, 74 custom rules | AI-specific patterns: disabled Supabase RLS, Flask SSTI, Django `DEBUG=True`, Rails mass-assignment, Go's swallowed `if err != nil {}`, Spring's `.csrf().disable()`, stub `NotImplementedError`s left in main |
+| Semgrep registry packs (`p/django`, `p/flask`, `p/golang`, `p/java`) | Broader framework-specific coverage |
+| Bandit | Python security linting |
+| pip-audit / npm audit | Pinned dependency versions vs. known CVEs (Python / JS) |
 | jscpd | Copy-paste detection |
-| gitleaks | Secrets anywhere in git history, not just the current snapshot — a key that was committed and deleted three months ago still counts |
+| gitleaks | Secrets anywhere in git history, not just the current snapshot |
 
-Plus a small custom script (`scripts/git-mine.js`) that mines git log for the stuff none of the above can see: bus factor, generic commit messages, whether refactoring is actually happening or just piling up.
+Plus `scripts/git-mine.js`, a custom script mining git log for bus factor, generic commit messages, and refactor cadence.
 
 ## Getting it running
 
-**Option A — Docker, zero local installs:**
+**Docker (zero local installs):**
 ```bash
 docker build -t ai-debt-audit .
 docker run --rm -v /path/to/any/repo:/repo ai-debt-audit . --out ai-debt-report.md
 ```
-All seven tools ship pre-installed in the image — nothing to `pip install` yourself. One thing to know: any `--out`/`--html`/`--pdf` path needs to point *inside* `/repo` (the mounted volume) or the file vanishes with the container when it exits — `--out ai-debt-report.md` lands in the repo root on your host; `--out /tmp/report.md` would not.
+Output paths must point *inside* `/repo` or they vanish with the container.
 
-**Option B — local install:**
-
-You'll need these installed first:
+**Local install:**
 ```bash
-pip install semgrep bandit pip-audit
-```
-and gitleaks — [instructions here](https://github.com/gitleaks/gitleaks#installing), it's a single binary, no package manager needed.
+pip install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
 
-Then:
-```bash
 git clone https://github.com/aniruddhavasudev/ai-debt-audit.git
-cd ai-debt-audit
-npm install
-npm link
-```
+cd ai-debt-audit && npm install && npm link
 
-That last command makes `aidebt-scan` available anywhere on your machine. Try it on something:
-```bash
 aidebt-scan /path/to/any/repo
 ```
 
 ## What comes out
 
 ```
-AI-Debt Scan — /path/to/repo
-
-✓ Semgrep (technical debt) (3500ms)
-✓ git-mine (cognitive + intent debt) (34ms)
-✓ jscpd (duplication) (46ms)
-✓ gitleaks (historical secrets) (141ms)
-✓ bandit (Python security) (140ms)
-✓ Scoring (26ms)
-
 ────────────────────────────────────────────────────────
   AI-DEBT REPORT
 ────────────────────────────────────────────────────────
@@ -126,28 +99,30 @@ AI-Debt Scan — /path/to/repo
   HTML:     ai-debt-report.html
 ────────────────────────────────────────────────────────
 ```
-
-That's a real run, not a mockup. You get a Markdown report with every finding and a styled standalone HTML version, side by side, every time.
+A real run, not a mockup — Markdown + styled standalone HTML, every time.
 
 ## Flags
 
 ```bash
-aidebt-scan <path-to-repo> [--out report.md] [--html report.html] [--json scores.json]
-                           [--sarif results.sarif] [--fail-on-score N] [--pdf report.pdf]
-                           [--history history.json] [--diff base-ref] [--badge badge.json]
+aidebt-scan <path> [--out report.md] [--html report.html] [--json scores.json]
+                   [--sarif results.sarif] [--fail-on-score N] [--pdf report.pdf]
+                   [--history history.json] [--diff base-ref] [--badge badge.json]
 ```
 
-`--out` picks where the Markdown goes (`./ai-debt-report.md` if you don't say). `--html` does the same for the HTML version — pass `--html ""` if you don't want one. `--json` dumps the raw numbers, useful if you want to track a score over time instead of just reading one report. `--sarif` writes GitHub's native code-scanning format (see the GitHub Action below). `--fail-on-score N` exits non-zero if the composite score is `>= N` — the hook a CI pipeline needs to actually block something, not just print a number. `--pdf` renders the HTML report to an actual PDF via headless Chrome/Chromium (whichever is on `PATH`) — the format you'd actually hand someone as a deliverable.
+| Flag | What it does |
+|---|---|
+| `--out` / `--html` | Report paths (pass `--html ""` to skip) |
+| `--json` | Raw scores, for tracking over time |
+| `--sarif` | GitHub code-scanning format (see Action below) |
+| `--fail-on-score N` | Exit non-zero if composite score `>= N` — the CI gate |
+| `--pdf` | Renders the HTML report via headless Chrome, for handing off as a deliverable |
+| `--history` | Appends this run's score to a JSON log, shows trend vs. last run |
+| `--diff <ref>` | Scopes Semgrep/Bandit to changed files only — "did this PR add debt" instead of a full rescan |
+| `--badge` | Writes a [shields.io endpoint-badge](https://shields.io/badges/endpoint-badge) JSON, like the one at the top of this file |
 
-`--history history.json` appends this run's score to a small local JSON file and shows the trend against the previous run right in the terminal summary — improving or worsening, not just a snapshot. Point it at the same file every time you scan a given repo and it becomes a running log.
+## Customizing with `.aidebtrc.json`
 
-`--diff main` scopes Semgrep/Bandit to only the files that actually changed vs `main` (or any ref), instead of the whole repo — faster, and it answers "did this PR add debt" instead of "what's wrong with everything." Falls back to a full scan if the ref can't be resolved. (git-mine/jscpd/gitleaks stay repo-wide regardless — bus factor and duplication are inherently whole-codebase questions, not per-file ones.)
-
-`--badge badge.json` writes a [shields.io endpoint-badge](https://shields.io/badges/endpoint-badge) JSON file — commit it and reference `https://img.shields.io/endpoint?url=<raw-url-to-badge.json>` in your own README for a live AI-Debt score badge, the same way this repo does for itself (see the badge at the top of this file, regenerated by [`.github/workflows/self-scan.yml`](.github/workflows/self-scan.yml) on a schedule).
-
-## Customizing the score with `.aidebtrc.json`
-
-Drop this at the root of the repo being scanned to override the defaults:
+Drop this at the scanned repo's root:
 
 ```json
 {
@@ -157,14 +132,14 @@ Drop this at the root of the repo being scanned to override the defaults:
 }
 ```
 
-All three keys are optional. `weights` overrides the 50/25/25 default split (they don't need to sum to 1 — the composite is just a weighted average). `ignoreRules` drops specific rule IDs from scoring entirely, not just from the report. `excludePaths` does the same for whole paths, using simple glob patterns (`*` and `**`).
+All keys optional. `weights` overrides the 50/25/25 split. `ignoreRules` drops rule IDs from scoring entirely. `excludePaths` does the same for whole paths (`*`/`**` globs).
 
-## Using it as a GitHub Action
+## As a GitHub Action
 
 ```yaml
 - uses: actions/checkout@v4
   with:
-    fetch-depth: 0   # required — see the warning below
+    fetch-depth: 0   # required — see below
 
 - uses: aniruddhavasudev/ai-debt-audit@v1.1.1
   with:
@@ -172,26 +147,20 @@ All three keys are optional. `weights` overrides the 50/25/25 default split (the
     fail-on-score: '70'   # optional — omit to report without blocking the PR
 ```
 
-This runs the full scan on every PR, uploads findings to GitHub's Security tab as SARIF, and attaches the Markdown/HTML reports as workflow artifacts. See [`action.yml`](action.yml) for all inputs.
+Runs the scan on every PR, uploads SARIF to GitHub's Security tab, attaches Markdown/HTML as artifacts. Full inputs in [`action.yml`](action.yml).
 
-**`fetch-depth: 0` is not optional.** `actions/checkout`'s default (`fetch-depth: 1`, a single commit) silently wrecks the cognitive/intent debt scores — confirmed empirically: a shallow 50-commit clone of a mature, widely-contributed project scored cognitive debt at 86/100; the same repo with full history scored 37/100. It doesn't error, it just quietly produces a wrong number, because bus-factor and commit-message analysis both need real history to mean anything. The scanner detects a shallow clone and prints a warning both in the terminal and in the report if this happens anyway — but fixing the checkout step avoids the problem entirely.
+**`fetch-depth: 0` is not optional.** A shallow clone silently wrecks cognitive/intent scores — confirmed empirically, a 50-commit shallow clone scored cognitive debt 86/100 vs. 37/100 with full history. The scanner warns if this happens, but fixing the checkout step avoids it entirely.
 
-## Using it as a Claude Code skill
+## As a Claude Code skill
 
-This repo is also packaged as a Claude Code plugin ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json), [`skills/ai-debt-audit/SKILL.md`](skills/ai-debt-audit/SKILL.md)) — install it and Claude will know to run a real scan (not just describe one) when you ask it to audit a repo for AI-generated debt.
+Packaged as a Claude Code plugin ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json), [`skills/ai-debt-audit/SKILL.md`](skills/ai-debt-audit/SKILL.md)) — install it and Claude runs a real scan when asked to audit a repo for AI-generated debt.
 
 ## License
 
-[AGPL-3.0](LICENSE). Practically: you can use, modify, and self-host this freely, including commercially — the one condition is that if you run a modified version as a network service, you have to make your modified source available to the people using it. That's a deliberate choice, not the default permissive license — it means a competitor can't quietly fork this, rebrand it, and run a closed competing hosted version without giving back.
+[AGPL-3.0](LICENSE) — use, modify, and self-host freely, including commercially. If you run a modified version as a network service, you must share your modified source with its users. That's deliberate: it stops a silent closed-source fork of a hosted competitor.
 
-## About that `test-fixtures/` folder
+## Notes
 
-It's full of fake credentials — a placeholder API key, AWS's own example access key, a Django `django-insecure-` dev key, a Flask secret that's just the word "secret" with numbers on it. That's on purpose, it's how I verified every rule actually fires instead of just parsing cleanly. If GitHub's secret scanner ever flags one of these, that's why — none of them are real.
-
-## Where this actually stands
-
-Honest version: the scoring weights (why technical debt counts for 50% and not 40%, why 20% duplication maxes out the duplication score) are a first pass, not something derived from a pile of calibration data yet. I tested it against a handful of real repos while building it and found real bugs this way — the "missing auth check" rule used to false-positive on any app using centralized middleware for auth, which is most of them, until I added a check for that. There's probably more like it I haven't found yet.
-
-See [CALIBRATION.md](CALIBRATION.md) for the actual data behind that claim — real scores from real repos, including a finding that a shallow git clone alone can move a repo from "Low risk" to "Medium risk" with zero code changes, and a bug (found via this repo's own self-scan and fixed same-day) where CI bot commits were fooling the knowledge-concentration score.
-
-If you run this against your own repo and a finding looks wrong, that's more useful to me right now than a star.
+- **`test-fixtures/`** is full of intentionally fake credentials (placeholder keys, AWS's own example key, Django/Flask dev secrets) — that's how every rule is verified to actually fire. None are real.
+- **Scoring weights are a v1 heuristic**, not yet calibrated against a large repo sample. See [CALIBRATION.md](CALIBRATION.md) for real findings so far, including the shallow-clone effect above and a bot-commit bug (found via this repo's own self-scan, fixed same-day) that was inflating knowledge-concentration scores.
+- If a finding looks wrong against your own repo, that's more useful to report than a star.
