@@ -2,9 +2,21 @@
 
 ## Installing
 
+The fastest path needs nothing but Node.js:
+
+```bash
+npx ai-debt-audit /path/to/any/repo
+```
+
+The scanner runs with whatever tools are present and says exactly which checks were skipped — git-history analysis, duplication, and dependency checks work with zero extra installs. For the full scan, add:
+
 ```bash
 pip3 install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
+```
 
+Working from a clone instead:
+
+```bash
 git clone https://github.com/aniruddhavasudev/ai-debt-audit.git
 cd ai-debt-audit && npm install && npm link
 

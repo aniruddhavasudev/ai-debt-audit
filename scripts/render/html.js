@@ -119,7 +119,8 @@ export function renderHtml({ composite, tier, technical, duplication, historical
     </div>
 
     <div class="card">
-      <h2>Technical Debt — ${technical.totalFindings} Semgrep findings</h2>
+      <h2>Technical Debt — ${technical.skipped ? "Semgrep not installed, pattern rules skipped" : `${technical.totalFindings} Semgrep findings`}</h2>
+      ${technical.skipped ? "<p><em>The 74 AI-debt Semgrep rules did not run (<code>pip install semgrep</code> for the full scan). The technical score blends only the tools that did run.</em></p>" : ""}
       <ul>${categoryRows}</ul>
     </div>
 
