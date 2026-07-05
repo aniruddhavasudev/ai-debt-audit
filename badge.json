@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
   "label": "ai-debt score",
-  "message": "25/100 (low)",
-  "color": "brightgreen"
+  "message": "37/100 (medium)",
+  "color": "yellow"
 }
