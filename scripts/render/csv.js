@@ -78,6 +78,16 @@ export function renderCsvWorkbook({ composite, tier, technical, cognitive, inten
             ],
           ]
         : []),
+      ...(cognitive.giantDumpCommits > 0
+        ? [
+            [
+              "Giant-Dump Commits",
+              Math.round(cognitive.giantDumpRatio * 100),
+              "N/A (contributes to Knowledge Risk score)",
+              `${Math.round(cognitive.giantDumpRatio * 100)}% of commits touched many files or churned many lines in one shot, measured from git log --numstat — the "wasn't reviewed incrementally" pattern. See knowledge-risk.csv for specifics.`,
+            ],
+          ]
+        : []),
     ]
   );
 
@@ -143,13 +153,22 @@ export function renderCsvWorkbook({ composite, tier, technical, cognitive, inten
   }
   files["technical-debt.csv"] = renderCsvTable(["Severity", "Detected By", "Issue Type", "File", "Line", "What This Means"], technicalRows);
 
-  // --- knowledge-risk.csv — files only one person has ever touched ---
+  // --- knowledge-risk.csv — files only one person has ever touched, plus
+  // giant-dump commits (a different flavor of the same "one person held
+  // all the context" risk, at commit granularity instead of file granularity) ---
   const knowledgeRows = (cognitive.riskyFiles || []).map((r) => [
     r.file || "",
     r.author || "",
     "If this person leaves, nobody else has touched this file — it's a single point of failure.",
   ]);
-  files["knowledge-risk.csv"] = renderCsvTable(["File", "Only Ever Edited By", "What This Means"], knowledgeRows);
+  for (const c of cognitive.giantDumpCommitList || []) {
+    knowledgeRows.push([
+      `${c.hash || ""} — "${c.subject || ""}"`,
+      c.author || "",
+      `${c.filesChanged} files, +${c.linesAdded}/-${c.linesDeleted} lines changed in one commit — too large to have been reviewed incrementally.`,
+    ]);
+  }
+  files["knowledge-risk.csv"] = renderCsvTable(["File / Commit", "Author", "What This Means"], knowledgeRows);
 
   // --- missing-context.csv — commits that don't explain why a change was made ---
   const aiAssistedHashes = new Set((intent.aiAssistedCommitList || []).map((c) => c.hash));

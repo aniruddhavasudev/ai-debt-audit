@@ -264,12 +264,31 @@ export function teamSizeDampingFactor(totalAuthors) {
 // its maximum, even though the bot only ever touches one generated file.
 const BOT_AUTHOR_PATTERN = /\[bot\]$/i;
 
+// How much a "giant dump" commit ratio (see git-mine.js's mineCommitChurn)
+// can add to cognitive debt, on top of the bus-factor signal. Additive,
+// not proportionally blended: zero giant-dump commits must collapse this
+// to exactly the pre-feature formula (100 * busFactorRiskRatio *
+// dampingFactor) — the same "add, never dilute" lesson from the intent
+// debt fix above (a fixed proportional split silently lowered scores for
+// repos where the new signal contributed nothing).
+//
+// Deliberately NOT team-size-damped like bus factor: bus factor is damped
+// because a small team is *structurally* single-author-per-file, which
+// isn't a real signal. An unreviewed giant-dump commit is a real risk
+// regardless of team size — arguably worse in a solo repo, where nobody
+// else could have caught it in review.
+const GIANT_DUMP_BONUS_WEIGHT = 0.3;
+
 export function scoreCognitiveDebt(gitMine) {
   const busFactorRiskRatio = gitMine.busFactorStats?.busFactorRiskRatio ?? 0;
   const allAuthors = Object.keys(gitMine.commitStats?.authorCounts ?? {});
   const totalAuthors = allAuthors.filter((a) => !BOT_AUTHOR_PATTERN.test(a)).length;
   const dampingFactor = teamSizeDampingFactor(totalAuthors);
-  const score = Math.round(100 * busFactorRiskRatio * dampingFactor);
+  const giantDumpRatio = gitMine.churnStats?.giantDumpRatio ?? 0;
+
+  const score = Math.round(
+    Math.min(100, 100 * busFactorRiskRatio * dampingFactor + 100 * giantDumpRatio * GIANT_DUMP_BONUS_WEIGHT)
+  );
   return {
     score,
     busFactorRiskRatio,
@@ -277,6 +296,13 @@ export function scoreCognitiveDebt(gitMine) {
     dampingFactor,
     isShallowClone: Boolean(gitMine.isShallowClone),
     ...gitMine.busFactorStats,
+    // Measured directly from `git log --numstat` — a commit touching many
+    // files or churning many lines in one shot, the "wasn't reviewed
+    // incrementally" pattern (see git-mine.js's GIANT_DUMP_MIN_FILES/
+    // GIANT_DUMP_MIN_LINES thresholds).
+    giantDumpRatio,
+    giantDumpCommits: gitMine.churnStats?.giantDumpCommits ?? 0,
+    giantDumpCommitList: gitMine.churnStats?.giantDumpCommitList ?? [],
   };
 }
 

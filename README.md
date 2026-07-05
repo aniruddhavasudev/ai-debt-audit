@@ -98,6 +98,7 @@ Works across Python, Ruby, JavaScript/TypeScript, Go, and Java projects.
 - **Measured AI-assisted commit detection** — reads real Co-Authored-By trailers (Claude Code, GitHub Copilot, Cursor) directly from git history to report what fraction of commits were AI-assisted, instead of only inferring AI involvement from code patterns
 - **Historical secret scanning** via gitleaks — catches a credential committed and later deleted, which a snapshot-only scanner never sees
 - **Bus-factor / knowledge-concentration tracking** from real git history, with bot commits excluded and a team-size damping factor so small teams aren't penalized for being small
+- **"Giant dump" commit detection** — flags commits that touched many files or churned hundreds of lines in one shot (measured from `git log --numstat`), the "wasn't reviewed incrementally" pattern, regardless of team size
 - **Four report formats by default, no flags needed** — Markdown, standalone HTML, a plain-language CSV workbook, and a client-deliverable PDF
 - **`--diff <ref>` mode** — scores only what changed vs. a base branch/commit, answering "did this PR add debt" instead of re-scanning everything
 - **`--history` tracking** — appends each scan to a local JSON log and shows the trend (improving/worsening) between runs

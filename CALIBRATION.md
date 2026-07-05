@@ -42,6 +42,14 @@ The first version of this shipped as a fixed 70/30 proportional split (70% gener
 
 Fixed as a same-day follow-up (the flawed version did merge and ran once via the scheduled self-scan — this repo's own `badge.json` briefly reflected the diluted score until this fix landed and re-ran). Commits that are both AI-assisted *and* generic/uninformative now count as 1.5x a plain generic commit toward the score, instead of the generic-message ratio being proportionally split with a separate AI ratio. This means a repo with zero AI-assisted-generic commits scores byte-identical to the pre-feature formula (100 × genericMessageRatio) — verified by a dedicated unit test — and only repos that actually have the compounding pattern (AI wrote it, nobody explained why) see any score change at all, and only upward. A repo that's 100% AI-assisted but every commit has a real explanation still scores 0 on this signal, since that's disclosed and reviewed, not hidden risk.
 
+## Finding 5: "giant dump" commits are additive to cognitive debt, not team-size-damped
+
+`scripts/git-mine.js` now measures commits that touch ≥15 files or churn ≥500 lines in one shot (`git log --numstat`) — the "wasn't reviewed incrementally" pattern. Applied the lesson from Finding 4 up front this time: the contribution to cognitive debt is additive (`100 * giantDumpRatio * 0.3`, capped at 100 total), not a proportional split with bus factor, so a repo with zero giant-dump commits scores exactly the pre-feature formula (`100 * busFactorRiskRatio * dampingFactor`) — verified by a unit test before this shipped, not after.
+
+Deliberately *not* damped by team size the way bus factor is. Bus factor's damping exists because a small team is structurally single-author-per-file — that's not a real signal, just what a small team looks like. A giant, unreviewed dump commit is a real risk regardless of team size; arguably worse in a solo repo, since nobody else could have caught it in review either way.
+
+Caught while testing: a synthetic fixture repo created earlier for the v1.10.0 restructuring work (a single commit adding 17 files at once, for an unrelated before/after diff check) legitimately trips this threshold — its cognitive debt score changed from 0 to 30 once this feature shipped. That's the feature working correctly, not a bug: the fixture really does have a giant-dump commit by construction. Re-verified against a version of the same fixture rebuilt with 17 incremental commits instead — cognitive debt stayed at exactly 0, confirming the "zero giant-dump commits, zero score impact" invariant actually holds.
+
 ## What would make this a real calibration study instead of a snapshot
 
 - 10-15+ repos spanning a genuine range: mature/well-maintained OSS, known-vibe-coded startups (if any become available for testing), and a few in between

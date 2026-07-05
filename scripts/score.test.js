@@ -252,3 +252,40 @@ test("scoreIntentDebt — surfaces aiToolCounts and aiAssistedCommitList unchang
   assert.deepEqual(result.aiToolCounts, { "Claude Code": 2 });
   assert.equal(result.aiAssistedCommitList.length, 1);
 });
+
+test("scoreCognitiveDebt — zero giant-dump commits scores byte-identical to the pre-feature formula", () => {
+  const result = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 0.5 },
+    commitStats: { authorCounts: { Alice: 5, Bob: 5, Carol: 5 } },
+    churnStats: { giantDumpRatio: 0 },
+  });
+  // dampingFactor at 3 authors is 1.0, so score should be exactly 100 * 0.5 * 1.0 = 50
+  assert.equal(result.score, 50, "must match the pre-feature bus-factor-only formula when giantDumpRatio is 0");
+});
+
+test("scoreCognitiveDebt — giant-dump commits add to the score without team-size damping", () => {
+  // Even a solo repo (dampingFactor 0, so bus factor contributes nothing)
+  // should still be pushed up by a real giant-dump-commit pattern — an
+  // unreviewed dump is risky regardless of team size.
+  const soloWithDumps = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 1.0 },
+    commitStats: { authorCounts: { "Solo Builder": 10 } },
+    churnStats: { giantDumpRatio: 0.5 },
+  });
+  assert.equal(soloWithDumps.dampingFactor, 0, "a single author should fully damp bus factor");
+  assert.ok(soloWithDumps.score > 0, "giant-dump ratio should still raise the score despite full bus-factor damping");
+});
+
+test("scoreCognitiveDebt — surfaces giantDumpCommits and giantDumpCommitList for reporting", () => {
+  const result = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 0 },
+    commitStats: { authorCounts: { Alice: 5, Bob: 5, Carol: 5 } },
+    churnStats: {
+      giantDumpRatio: 0.2,
+      giantDumpCommits: 1,
+      giantDumpCommitList: [{ hash: "abc1234", author: "Alice", subject: "feat: big change", filesChanged: 40, linesAdded: 900, linesDeleted: 10 }],
+    },
+  });
+  assert.equal(result.giantDumpCommits, 1);
+  assert.equal(result.giantDumpCommitList.length, 1);
+});
