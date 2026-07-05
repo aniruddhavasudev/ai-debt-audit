@@ -1,12 +1,20 @@
 {
   "name": "ai-debt-audit",
-  "description": "Scan a repo for AI-generated technical, cognitive, and intent debt — deterministic, fully local, no LLM calls. 44 Semgrep rules plus Bandit, pip-audit, jscpd, and gitleaks.",
-  "version": "1.1.0",
+  "description": "Scan a repo for AI-generated technical, cognitive, and intent debt \u2014 deterministic, fully local, no LLM calls. 54 Semgrep rules plus Bandit, pip-audit, jscpd, and gitleaks.",
+  "version": "1.3.0",
   "author": {
     "name": "aniruddhavasudev"
   },
   "homepage": "https://github.com/aniruddhavasudev/ai-debt-audit",
   "repository": "https://github.com/aniruddhavasudev/ai-debt-audit",
   "license": "UNLICENSED",
-  "keywords": ["ai-debt", "technical-debt", "code-audit", "semgrep", "security", "static-analysis"]
+  "keywords": [
+    "ai-debt",
+    "technical-debt",
+    "code-audit",
+    "semgrep",
+    "security",
+    "static-analysis",
+    "rails"
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "ai-debt-audit",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Scans a repo for AI-generated technical, cognitive, and intent debt. Deterministic, explainable, fully local — no code ever leaves your machine.",
   "keywords": [
     "ai",
