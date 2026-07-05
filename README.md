@@ -94,21 +94,21 @@ If you run this and it finds something real, a star helps other people find it t
 
 </div>
 
-- ✅ Disabled Supabase Row-Level Security
-- ✅ SSTI via Flask `render_template_string`
-- ✅ Django `DEBUG=True` left on in production
-- ✅ Rails mass-assignment via `params.permit!`
-- ✅ Spring `.csrf().disable()` / `permitAll()`
-- ✅ CORS wildcard origins (Flask-CORS, Spring `@CrossOrigin`)
-- ✅ SQL & command injection (Java, Go, Python)
-- ✅ Path traversal via unsanitized file paths
-- ✅ XXE, insecure deserialization, trust-all TLS
-- ✅ Weak randomness for tokens/secrets
-- ✅ Silently swallowed errors (Go's `if err != nil {}`)
-- ✅ Stub code (`NotImplementedError`) left in main
-- ✅ Hardcoded secrets — current tree *and* full git history
-- ✅ Dependency CVEs (pip-audit, npm audit)
-- ✅ Copy-paste duplication (jscpd)
+✅ Disabled Supabase Row-Level Security<br/>
+✅ SSTI via Flask `render_template_string`<br/>
+✅ Django `DEBUG=True` left on in production<br/>
+✅ Rails mass-assignment via `params.permit!`<br/>
+✅ Spring `.csrf().disable()` / `permitAll()`<br/>
+✅ CORS wildcard origins (Flask-CORS, Spring `@CrossOrigin`)<br/>
+✅ SQL & command injection (Java, Go, Python)<br/>
+✅ Path traversal via unsanitized file paths<br/>
+✅ XXE, insecure deserialization, trust-all TLS<br/>
+✅ Weak randomness for tokens/secrets<br/>
+✅ Silently swallowed errors (Go's `if err != nil {}`)<br/>
+✅ Stub code (`NotImplementedError`) left in main<br/>
+✅ Hardcoded secrets — current tree *and* full git history<br/>
+✅ Dependency CVEs (pip-audit, npm audit)<br/>
+✅ Copy-paste duplication (jscpd)
 
 <div align="center">
 
@@ -116,12 +116,12 @@ If you run this and it finds something real, a star helps other people find it t
 
 </div>
 
-- ✅ Bus factor / knowledge concentration from real `git log` history
-- ✅ Bot commits excluded from team-size math
-- ✅ Team-size damping — fair to solo projects
-- ✅ Commit message quality, not just "fix"
-- ✅ Refactor cadence vs. pure feature velocity
-- ✅ Shallow-clone detection with a live warning
+✅ Bus factor / knowledge concentration from real `git log` history<br/>
+✅ Bot commits excluded from team-size math<br/>
+✅ Team-size damping — fair to solo projects<br/>
+✅ Commit message quality, not just "fix"<br/>
+✅ Refactor cadence vs. pure feature velocity<br/>
+✅ Shallow-clone detection with a live warning
 
 <div align="center">
 
