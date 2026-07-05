@@ -106,7 +106,7 @@ docker run --rm -v /path/to/any/repo:/repo ai-debt-audit . --out ai-debt-report.
 
 ```bash
 # Local install
-pip install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
+pip3 install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
 git clone https://github.com/aniruddhavasudev/ai-debt-audit.git
 cd ai-debt-audit && npm install && npm link
 aidebt-scan /path/to/any/repo

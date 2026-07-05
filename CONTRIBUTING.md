@@ -12,7 +12,7 @@ Run `aidebt-scan` against a repo you know well and tell me what's wrong: a findi
 git clone https://github.com/aniruddhavasudev/ai-debt-audit.git
 cd ai-debt-audit
 npm install
-pip install semgrep bandit pip-audit   # gitleaks: https://github.com/gitleaks/gitleaks#installing
+pip3 install semgrep bandit pip-audit   # gitleaks: https://github.com/gitleaks/gitleaks#installing
 npm link
 ```
 

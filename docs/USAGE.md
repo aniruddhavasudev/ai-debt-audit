@@ -11,7 +11,7 @@ All seven tools ship pre-installed. Output paths must point *inside* `/repo` (th
 
 **Local install:**
 ```bash
-pip install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
+pip3 install semgrep bandit pip-audit   # + gitleaks: https://github.com/gitleaks/gitleaks#installing
 
 git clone https://github.com/aniruddhavasudev/ai-debt-audit.git
 cd ai-debt-audit && npm install && npm link
