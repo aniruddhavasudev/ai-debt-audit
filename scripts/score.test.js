@@ -10,8 +10,8 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { globToRegExp } from "./config.js";
 import {
-  globToRegExp,
   teamSizeDampingFactor,
   riskTier,
   scoreDuplication,
@@ -20,7 +20,7 @@ import {
   scoreDependencyVulnerabilities,
   combineTechnicalDebt,
   scoreCognitiveDebt,
-} from "./score.js";
+} from "./scoring.js";
 
 test("teamSizeDampingFactor — 1 author means zero, not a knowledge-silo signal", () => {
   assert.equal(teamSizeDampingFactor(1), 0);

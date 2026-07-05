@@ -1,6 +1,6 @@
 # Calibration notes
 
-The scoring constants in `scripts/score.js` (category weights, saturation thresholds, the team-size damping curve) were set as reasonable starting points while building the tool, not derived from a large dataset. This document is the honest v1 snapshot of what's actually been tested — a handful of real repos, not the 10-15+ repo study that would be needed to treat these constants as validated. Update this file as more evidence comes in; don't treat any number here as final.
+The scoring constants in `scripts/scoring.js` (category weights, saturation thresholds, the team-size damping curve) were set as reasonable starting points while building the tool, not derived from a large dataset. This document is the honest v1 snapshot of what's actually been tested — a handful of real repos, not the 10-15+ repo study that would be needed to treat these constants as validated. Update this file as more evidence comes in; don't treat any number here as final.
 
 ## What's been tested so far
 
@@ -30,7 +30,7 @@ This is arguably correct behavior for what those two categories are actually mea
 
 This repo's own self-scan surfaced this: `github-actions[bot]` shows up as a distinct "author" (from the automated badge-update commits), which was enough to push the team-size damping factor to its maximum (1.0) — even though the bot only ever touches `badge.json` and contributes nothing to actual knowledge distribution across the codebase. The result was a cognitive debt score of 97/100, which is *technically* an accurate reading of "97% of files have only one human-equivalent author," but the *reason* it crossed the damping threshold (3 total authors) was a bot commit, not a second real contributor.
 
-**Fixed the same day it was found.** `scoreCognitiveDebt` now excludes any author matching `/\[bot\]$/i` from the team-size count (see `scripts/score.js`), covering `github-actions[bot]`, `dependabot[bot]`, and the same convention most other bots follow. Re-running the self-scan after the fix: cognitive debt dropped from 97 to 48, composite from 39 to 27 — both now correctly reflecting "1 real human contributor" instead of being fooled by CI automation. Covered by a dedicated unit test (`scripts/score.test.js`) so this can't silently regress.
+**Fixed the same day it was found.** `scoreCognitiveDebt` now excludes any author matching `/\[bot\]$/i` from the team-size count (see `scripts/scoring.js`), covering `github-actions[bot]`, `dependabot[bot]`, and the same convention most other bots follow. Re-running the self-scan after the fix: cognitive debt dropped from 97 to 48, composite from 39 to 27 — both now correctly reflecting "1 real human contributor" instead of being fooled by CI automation. Covered by a dedicated unit test (`scripts/score.test.js`) so this can't silently regress.
 
 Not yet fixed. A reasonable improvement: exclude known bot author patterns (`*[bot]`, or a configurable allowlist) from the team-size count used for damping, since they don't represent real knowledge redundancy. Filed as a real, specific thing to fix rather than left as a vague "needs calibration" note — see `scripts/git-mine.js`'s `mineCommitMessages`/`mineBusFactor` for where the author-counting logic lives.
 
