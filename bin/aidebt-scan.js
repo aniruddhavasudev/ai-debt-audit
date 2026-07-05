@@ -369,12 +369,27 @@ function main() {
   // spawnSync (not execFileSync) deliberately — once --fail-on-score can
   // make score.js exit non-zero on purpose, execFileSync would throw here
   // and crash the whole CLI instead of letting us report cleanly and exit
-  // with the right code ourselves.
-  const scoreRun = spawnSync("node", scoreArgs, { stdio: ["ignore", "ignore", "ignore"] });
+  // with the right code ourselves. stderr is captured (not ignored) so a
+  // real scoring failure can be surfaced instead of swallowed.
+  const scoreRun = spawnSync("node", scoreArgs, { stdio: ["ignore", "ignore", "pipe"], encoding: "utf8" });
   step("Scoring", () => scoreRun.status === 0 || scoreRun.status === 1);
 
+  // Exit status 1 is reserved for --fail-on-score; anything else non-zero
+  // (or a missing scores.json) means scoring itself failed — report the
+  // captured error instead of crashing on JSON.parse of a missing file.
+  if ((scoreRun.status !== 0 && scoreRun.status !== 1) || !fileExists(rawJsonPath)) {
+    const detail = (scoreRun.stderr || "").trim();
+    console.error(c.red(`\nScoring failed${detail ? `:\n${detail}` : "."}`));
+    fs.rmSync(workDir, { recursive: true, force: true });
+    process.exit(scoreRun.status || 1);
+  }
+
   const scores = JSON.parse(fs.readFileSync(rawJsonPath, "utf8"));
-  if (args.json) fs.copyFileSync(rawJsonPath, path.resolve(args.json));
+  if (args.json) {
+    const jsonTarget = path.resolve(args.json);
+    fs.mkdirSync(path.dirname(jsonTarget), { recursive: true });
+    fs.copyFileSync(rawJsonPath, jsonTarget);
+  }
 
   let pdfPath = null;
   const pdfRequested = args.pdf === undefined ? true : Boolean(args.pdf);
@@ -386,8 +401,10 @@ function main() {
         console.error(c.yellow("  --pdf requires an HTML report to render from — can't combine with --html \"\""));
       }
     } else {
-      pdfPath = args.pdf ? path.resolve(args.pdf) : outPath.replace(/\.md$/, "") + ".pdf";
-      step("PDF export", () => runPdfExport(htmlPath, pdfPath));
+      const pdfTarget = args.pdf ? path.resolve(args.pdf) : outPath.replace(/\.md$/, "") + ".pdf";
+      // Only report a PDF path if the export actually produced one — a
+      // skipped export (no Chromium on PATH) used to still print the path.
+      pdfPath = step("PDF export", () => runPdfExport(htmlPath, pdfTarget));
     }
   }
 

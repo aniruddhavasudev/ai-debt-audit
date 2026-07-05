@@ -17,6 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "../lib/args.js";
+import { ensureParentDir } from "../lib/fs-utils.js";
 import { loadConfig, applyConfigFilters } from "./config.js";
 import {
   scoreTechnicalDebt,
@@ -139,6 +140,7 @@ function main() {
   const report = renderMarkdown(reportData);
 
   if (args.out) {
+    ensureParentDir(args.out);
     fs.writeFileSync(args.out, report);
     console.error(`Report written to ${args.out}`);
   } else {
@@ -147,6 +149,7 @@ function main() {
 
   if (args.html) {
     const html = renderHtml(reportData);
+    ensureParentDir(args.html);
     fs.writeFileSync(args.html, html);
     console.error(`HTML report written to ${args.html}`);
   }
@@ -154,6 +157,7 @@ function main() {
   // Also emit the raw numbers as JSON on stderr-adjacent file if requested,
   // useful for future dashboarding without re-parsing the Markdown.
   if (args.json) {
+    ensureParentDir(args.json);
     fs.writeFileSync(
       args.json,
       JSON.stringify(
@@ -166,12 +170,14 @@ function main() {
 
   if (args.badge) {
     const badge = renderShieldsBadge(composite, tier);
+    ensureParentDir(args.badge);
     fs.writeFileSync(args.badge, JSON.stringify(badge, null, 2));
     console.error(`Shields.io badge JSON written to ${args.badge}`);
   }
 
   if (args.sarif) {
     const sarif = renderSarif(semgrepResults, banditResults, repoRoot);
+    ensureParentDir(args.sarif);
     fs.writeFileSync(args.sarif, JSON.stringify(sarif, null, 2));
     console.error(`SARIF written to ${args.sarif}`);
   }
@@ -192,6 +198,13 @@ function main() {
   // bare `score.js` run should never fail just because it ran.
   if (args["fail-on-score"] !== undefined) {
     const threshold = Number(args["fail-on-score"]);
+    // NaN silently disables the gate: `composite >= NaN` is always false,
+    // so a typo'd threshold would make CI pass forever. Fail loudly instead.
+    if (!Number.isFinite(threshold)) {
+      console.error(`Error: --fail-on-score expects a number, got '${args["fail-on-score"]}'`);
+      process.exitCode = 2;
+      return;
+    }
     if (composite >= threshold) {
       console.error(`\nComposite score ${composite} >= threshold ${threshold} — failing.`);
       process.exitCode = 1;
@@ -200,5 +213,13 @@ function main() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  try {
+    main();
+  } catch (err) {
+    // A clean one-line error beats a raw stack trace: every failure here is
+    // an input/filesystem problem (unwritable path, malformed tool output),
+    // not a bug the user can act on from a stack.
+    console.error(`Error: ${err.message}`);
+    process.exit(2);
+  }
 }

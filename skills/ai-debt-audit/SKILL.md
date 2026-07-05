@@ -27,9 +27,10 @@ Node.js is also required (the CLI itself is a Node script).
 
 ## Running the scan
 
-From this plugin's root directory:
+The CLI lives at `bin/aidebt-scan.js` in the **plugin root** (the directory containing `bin/`, `scripts/`, and `rules/`) — two levels up from this SKILL.md, *not* in this skill's own directory. When installed as a Claude Code plugin, that's `${CLAUDE_PLUGIN_ROOT}`:
+
 ```bash
-node bin/aidebt-scan.js <path-to-target-repo> --out /tmp/ai-debt-report.md --html /tmp/ai-debt-report.html
+node "${CLAUDE_PLUGIN_ROOT:-.}/bin/aidebt-scan.js" <path-to-target-repo> --out /tmp/ai-debt-report.md --html /tmp/ai-debt-report.html
 ```
 
 Useful flags to know about (full list in the main README):
