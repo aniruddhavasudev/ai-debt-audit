@@ -225,9 +225,11 @@ function scoreBandit(banditResults, totalFilesScanned) {
     score,
     totalFindings: findings.length,
     byCategory,
+    // Every finding, not a "top 5" sample — see the comment on topFindings()
+    // above for why silent truncation is the wrong default for a report
+    // meant to be used as evidence.
     top: [...findings]
       .sort((a, b) => (BANDIT_SEVERITY_WEIGHT[b.issue_severity] ?? 0) - (BANDIT_SEVERITY_WEIGHT[a.issue_severity] ?? 0))
-      .slice(0, 5)
       .map((f) => ({
         testId: f.test_id,
         severity: f.issue_severity,
@@ -373,11 +375,14 @@ function renderShieldsBadge(composite, tier) {
   };
 }
 
-function topFindings(semgrepResults, limit = 10) {
+// Every finding, not a "top N" sample — the report is meant to be usable
+// as evidence (a due-diligence artifact, a PR gate), and evidence that
+// silently drops findings past an arbitrary cutoff isn't trustworthy.
+// Still sorted by severity weight so the most serious findings read first.
+function topFindings(semgrepResults) {
   const findings = semgrepResults.results || [];
   return [...findings]
     .sort((a, b) => (b.extra?.metadata?.weight ?? 0) - (a.extra?.metadata?.weight ?? 0))
-    .slice(0, limit)
     .map((f) => ({
       rule: f.check_id.split(".").pop(),
       severity: f.extra?.severity,
@@ -496,7 +501,7 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
     lines.push(`- **${category}**: ${stats.count} findings (weighted ${stats.weight})`);
   }
 
-  lines.push(`\n### Top findings (by severity weight)\n`);
+  lines.push(`\n### All findings (sorted by severity weight)\n`);
   for (const f of top) {
     lines.push(`- [${f.severity}] \`${f.rule}\` — ${f.path}:${f.line} — ${f.message}`);
     if (f.dampenedReason) lines.push(`  - ⚠ *${f.dampenedReason}*`);
@@ -687,7 +692,7 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
     </div>
 
     <div class="card">
-      <h2>Top Findings</h2>
+      <h2>All Findings</h2>
       <table>
         <thead><tr><th>Severity</th><th>Rule</th><th>Location</th><th>Detail</th></tr></thead>
         <tbody>${findingsRows}</tbody>
