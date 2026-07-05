@@ -1,7 +1,0 @@
-Category,Score (0-100),Risk Level,What This Means
-Overall,28,Medium,"The overall AI-Debt score, combining all three categories below."
-Security & Quality,28,Medium,"Security holes, copy-pasted code, and unfinished work left in place. See technical-debt.csv for specifics."
-Knowledge Risk,51,High,What happens if the one person who understands this code leaves. See knowledge-risk.csv for specifics.
-Missing Context,3,Low,Whether anyone wrote down why the code works the way it does. See missing-context.csv for specifics.
-AI-Assisted Commits,5,N/A (informational),"5% of commits carry a known AI coding tool's signature (Co-Authored-By trailer or equivalent) — measured, not inferred. Not itself a risk score: disclosed AI use is transparency, not debt. See missing-context.csv for which of these commits also lack an explanation."
-Giant-Dump Commits,6,N/A (contributes to Knowledge Risk score),"6% of commits touched many files or churned many lines in one shot, measured from git log --numstat — the ""wasn't reviewed incrementally"" pattern. See knowledge-risk.csv for specifics."
