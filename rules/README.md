@@ -4,7 +4,7 @@
 semgrep --config rules/ --json --output findings.json /path/to/target/repo
 ```
 
-Semgrep scans every `.yml` in this directory automatically — no need to reference files individually. Each rule carries two pieces of metadata the scorer (`scripts/score.js`) reads:
+Semgrep scans every `.yml` in this directory automatically — no need to reference files individually. Each rule carries two pieces of metadata the scorer (`scripts/scoring.js`) reads:
 
 - `ai_debt_category` — which bucket the finding rolls up into (`security`, `error_handling`, `incomplete_implementation`, `framework_misuse`, `reinvented_wheel`)
 - `weight` — points contributed per occurrence, before saturation/normalization is applied

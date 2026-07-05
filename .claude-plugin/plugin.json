@@ -1,7 +1,7 @@
 {
   "name": "ai-debt-audit",
   "description": "Finds hidden risks in AI-generated code \u2014 security gaps, shortcuts, and knowledge trapped in one person's head. 100% private, runs on your machine.",
-  "version": "1.6.0",
+  "version": "1.10.0",
   "author": {
     "name": "aniruddhavasudev"
   },

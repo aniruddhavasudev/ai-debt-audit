@@ -30,8 +30,7 @@ jobs:
       - name: Install gitleaks
         run: |
           set -euo pipefail
-          VERSION=$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | head -1 | cut -d'"' -f4 | sed 's/^v//')
-          if [ -z "$VERSION" ]; then VERSION="8.30.1"; echo "Warning: could not resolve latest gitleaks version (rate-limited?), falling back to pinned $VERSION"; fi
+          VERSION=$(scripts/resolve-gitleaks-version.sh)
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | sudo tar -xz -C /usr/local/bin gitleaks
           sudo chmod +x /usr/local/bin/gitleaks
 

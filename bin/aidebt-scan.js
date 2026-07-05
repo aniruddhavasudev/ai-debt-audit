@@ -51,55 +51,17 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { c, tierColor, barChart } from "../scripts/colors.js";
+import { parseArgs } from "../lib/args.js";
+import { binExists, fileExists } from "../lib/fs-utils.js";
+import { dampenMiddlewareCoveredFindings } from "../lib/auth-middleware-dampening.js";
+import { recordHistory } from "../lib/history.js";
+import { runPdfExport } from "../lib/pdf-export.js";
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULES_DIR = path.join(PACKAGE_ROOT, "rules");
 const GIT_MINE_SCRIPT = path.join(PACKAGE_ROOT, "scripts", "git-mine.js");
 const SCORE_SCRIPT = path.join(PACKAGE_ROOT, "scripts", "score.js");
 const JSCPD_BIN = path.join(PACKAGE_ROOT, "node_modules", ".bin", "jscpd");
-
-// Calibration fix #1: the ai-debt-nextjs-api-route-missing-auth-check rule
-// can only see auth calls made *inside* the flagged function. It cannot see
-// auth enforced centrally in Next.js middleware — a very common, legitimate
-// pattern — so as written it false-positives on every route in any app that
-// does this. We can't fix that inside Semgrep itself (a single rule can't
-// reason across files), so we detect the middleware here, where we have
-// direct filesystem access to the target repo, and dampen the finding's
-// weight rather than trusting it at full confidence.
-const AUTH_MIDDLEWARE_CANDIDATES = ["middleware.ts", "middleware.js", "src/middleware.ts", "src/middleware.js"];
-const AUTH_KEYWORDS_RE = /(auth|session|getUser|getSession|jwt)/i;
-const MISSING_AUTH_CHECK_RULE = "ai-debt-nextjs-api-route-missing-auth-check";
-const MIDDLEWARE_DAMPING_FACTOR = 0.2; // 80% confidence discount, not full suppression
-
-function parseArgs(argv) {
-  const args = { _: [] };
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i].startsWith("--")) {
-      args[argv[i].slice(2)] = argv[i + 1];
-      i++;
-    } else {
-      args._.push(argv[i]);
-    }
-  }
-  return args;
-}
-
-function binExists(bin) {
-  try {
-    execFileSync("which", [bin], { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function fileExists(p) {
-  try {
-    return fs.statSync(p).isFile();
-  } catch {
-    return false;
-  }
-}
 
 // For --diff mode: only run static analysis against files that actually
 // changed vs a base ref, instead of the whole repo. ACMR = Added, Copied,
@@ -121,83 +83,6 @@ function getChangedFiles(targetPath, baseRef) {
   } catch (err) {
     console.error(c.yellow(`  Warning: could not diff against '${baseRef}' (${err.message.split("\n")[0]}) — falling back to full scan`));
     return null;
-  }
-}
-
-function getGitCommitSha(targetPath) {
-  try {
-    return execFileSync("git", ["-C", targetPath, "rev-parse", "--short", "HEAD"], {
-      encoding: "utf8",
-    }).trim();
-  } catch {
-    return null;
-  }
-}
-
-// Appends this run's score to a small local JSON history file so a repo can
-// be tracked over time — "is this getting better or worse" is a genuinely
-// different question than "what's the score right now," and one-shot
-// competitors (the manual audit agencies) can't answer it at all since they
-// don't run continuously against the same repo.
-function recordHistory(historyPath, targetPath, scores) {
-  let history = [];
-  if (fileExists(historyPath)) {
-    try {
-      history = JSON.parse(fs.readFileSync(historyPath, "utf8"));
-      if (!Array.isArray(history)) history = [];
-    } catch {
-      console.error(c.yellow(`  Warning: ${historyPath} exists but isn't valid JSON — starting a new history.`));
-      history = [];
-    }
-  }
-
-  history.push({
-    timestamp: new Date().toISOString(),
-    commit: getGitCommitSha(targetPath),
-    composite: scores.composite,
-    tier: scores.tier,
-    technical: scores.technical.blendedScore,
-    cognitive: scores.cognitive.score,
-    intent: scores.intent.score,
-  });
-
-  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
-  return history;
-}
-
-function detectCentralizedAuthMiddleware(targetPath) {
-  for (const candidate of AUTH_MIDDLEWARE_CANDIDATES) {
-    const candidatePath = path.join(targetPath, candidate);
-    if (fileExists(candidatePath) && AUTH_KEYWORDS_RE.test(fs.readFileSync(candidatePath, "utf8"))) {
-      return candidatePath;
-    }
-  }
-  return null;
-}
-
-function dampenMiddlewareCoveredFindings(semgrepOutPath, targetPath) {
-  const middlewarePath = detectCentralizedAuthMiddleware(targetPath);
-  if (!middlewarePath) return;
-
-  const data = JSON.parse(fs.readFileSync(semgrepOutPath, "utf8"));
-  const relMiddlewarePath = path.relative(targetPath, middlewarePath);
-  let adjustedCount = 0;
-
-  for (const result of data.results || []) {
-    if (!result.check_id.endsWith(MISSING_AUTH_CHECK_RULE)) continue;
-    const originalWeight = Number(result.extra?.metadata?.weight ?? 4);
-    result.extra.metadata.weight = Math.round(originalWeight * MIDDLEWARE_DAMPING_FACTOR * 10) / 10;
-    result.extra.metadata.dampened_reason =
-      `Repo has centralized auth middleware at ${relMiddlewarePath} — this finding's confidence ` +
-      `is reduced 80% since auth may be enforced there instead of per-route. Verify manually.`;
-    adjustedCount++;
-  }
-
-  if (adjustedCount > 0) {
-    fs.writeFileSync(semgrepOutPath, JSON.stringify(data));
-    console.error(
-      c.cyan(`  ℹ Found centralized auth middleware (${relMiddlewarePath}) — dampened ${adjustedCount} auth-check finding(s)`)
-    );
   }
 }
 
@@ -371,41 +256,6 @@ function runGitleaks(targetPath, outPath) {
     // not an error. Only a missing output file is a real failure.
   }
   return fileExists(outPath) ? outPath : null;
-}
-
-// Prefer chromium (lighter, common on CI images) but fall back to a full
-// Chrome install — either one's headless print-to-pdf is the same engine
-// that renders the HTML report, so the PDF is pixel-faithful to it.
-const PDF_RENDERER_CANDIDATES = ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"];
-
-function findPdfRenderer() {
-  return PDF_RENDERER_CANDIDATES.find(binExists) || null;
-}
-
-function runPdfExport(htmlPath, pdfPath) {
-  const renderer = findPdfRenderer();
-  if (!renderer) {
-    console.error(c.yellow("  no Chromium/Chrome found on PATH — skipping PDF export"));
-    return null;
-  }
-  try {
-    execFileSync(
-      renderer,
-      [
-        "--headless",
-        "--disable-gpu",
-        "--no-sandbox",
-        "--no-pdf-header-footer",
-        `--print-to-pdf=${pdfPath}`,
-        `file://${htmlPath}`,
-      ],
-      { stdio: ["ignore", "ignore", "ignore"] }
-    );
-  } catch {
-    // Headless Chrome's own harmless dbus/gpu warnings can make this exit
-    // non-zero even on success — check for the actual output file instead.
-  }
-  return fileExists(pdfPath) ? pdfPath : null;
 }
 
 function printSummaryBox(scores, outPath, htmlPath, pdfPath, history, sarifPath, badgePath, csvPath) {

@@ -4,7 +4,7 @@ This is early — the scoring constants are a v1 heuristic (see the methodology 
 
 ## The fastest way to contribute
 
-Run `aidebt-scan` against a repo you know well and tell me what's wrong: a finding that shouldn't have fired, something obviously AI-generated that it missed, a score that felt wrong for what you know about the codebase. That feedback is worth more right now than any single PR — see [`scripts/score.js`](scripts/score.js) for exactly how the score is computed if you want to argue with a specific number.
+Run `aidebt-scan` against a repo you know well and tell me what's wrong: a finding that shouldn't have fired, something obviously AI-generated that it missed, a score that felt wrong for what you know about the codebase. That feedback is worth more right now than any single PR — see [`scripts/scoring.js`](scripts/scoring.js) for exactly how the score is computed if you want to argue with a specific number.
 
 ## Setting up locally
 
@@ -37,11 +37,15 @@ Every rule should trace to a *specific, observed AI failure mode* — not a gene
 ## Good first issues (not yet filed as GitHub issues — pick one, or ping me and I'll file it properly with a label)
 
 - **`--diff` mode for jscpd** — duplication currently always scans the whole repo even in `--diff` mode; scoping it to compare changed files against the rest of the codebase (not just against each other) would make CI runs faster without losing signal.
-- **A second real-repo calibration pass** — the saturation constants in `scripts/score.js` were set from testing against a small number of repos. Running the scanner against a broader set (a mix of mature OSS projects and known vibe-coded ones) and proposing constant adjustments with the actual score distributions attached would be extremely useful. See [CALIBRATION.md](CALIBRATION.md) for what's been tested so far.
+- **A second real-repo calibration pass** — the saturation constants in `scripts/scoring.js` were set from testing against a small number of repos. Running the scanner against a broader set (a mix of mature OSS projects and known vibe-coded ones) and proposing constant adjustments with the actual score distributions attached would be extremely useful. See [CALIBRATION.md](CALIBRATION.md) for what's been tested so far.
 - **Windows compatibility check** — the CLI has only been tested on Linux; path handling (`path.join`/`path.relative`) *should* be cross-platform-safe since it's all done through Node's `path` module rather than manual string concatenation, but this hasn't actually been verified on Windows.
-- **`excludePaths` glob correctness** — the current implementation (`scripts/score.js`, `globToRegExp`) is a small hand-rolled glob-to-regex converter, not a full glob spec. Edge cases (character classes, brace expansion) aren't supported. Either documenting the real limits clearly or swapping in a minimal, dependency-free proper glob matcher would help.
+- **`excludePaths` glob correctness** — the current implementation (`scripts/config.js`, `globToRegExp`) is a small hand-rolled glob-to-regex converter, not a full glob spec. Edge cases (character classes, brace expansion) aren't supported. Either documenting the real limits clearly or swapping in a minimal, dependency-free proper glob matcher would help.
 - **OWASP Dependency-Check for Java/Maven/Gradle** — the Java equivalent of `pip-audit`/`npm audit`, checking `pom.xml`/`build.gradle` dependencies against known CVEs. Not yet wired in; heavier than the other two (needs a JVM + a vulnerability database download on first run), so it needs its own graceful-skip handling the same way `pip-audit`/`npm audit` degrade when their manifest files aren't present.
 - **PHP/Laravel and C#/.NET rule coverage** — the next two backend stacks after JS/TS, Python, Ruby, Go, and Java. Same approach as the existing rule files: real AI-specific failure modes (mass assignment, disabled CSRF, raw SQL, etc.), not generic lint rules, with a real trigger fixture for every rule.
+
+## Cutting a release
+
+`package.json`'s `"version"` and `.claude-plugin/plugin.json`'s `"version"` don't update themselves — bump both by hand to match the new `vX.Y.Z` branch/tag as part of the release, not after. There's no CI check enforcing this yet, so it's easy for them to silently drift behind the actual git tags (which is exactly what happened before — `package.json` sat at an old version for several releases).
 
 ## What not to send
 
