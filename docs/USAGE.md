@@ -24,7 +24,7 @@ aidebt-scan /path/to/any/repo
 
 ```bash
 aidebt-scan <path> [--out report.md] [--html report.html] [--json scores.json]
-                   [--sarif results.sarif] [--fail-on-score N] [--pdf report.pdf]
+                   [--sarif results.sarif] [--csv findings.csv] [--fail-on-score N] [--pdf report.pdf]
                    [--history history.json] [--diff base-ref] [--badge badge.json]
 ```
 
@@ -34,6 +34,7 @@ aidebt-scan <path> [--out report.md] [--html report.html] [--json scores.json]
 | `--html` | Standalone HTML report path; pass `--html ""` to skip it |
 | `--json` | Dumps raw scores — useful for tracking a score over time |
 | `--sarif` | Writes GitHub's native code-scanning format, for the Security tab |
+| `--csv findings.csv` | Every finding as one flat table (source, severity, rule, file, line, message) — opens directly in Excel, Google Sheets, or Numbers, for filtering/sorting findings outside a Markdown report |
 | `--fail-on-score N` | Exits non-zero if the composite score is `>= N` — the hook a CI pipeline needs to actually block something |
 | `--pdf` | Renders the HTML report via headless Chrome/Chromium (whichever is on `PATH`) — a deliverable format |
 | `--history history.json` | Appends this run's score to a local JSON log and shows the trend vs. the previous run |

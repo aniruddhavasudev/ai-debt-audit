@@ -81,7 +81,7 @@ runs:
       continue-on-error: true
       run: |
         set +e
-        ARGS=("${{ inputs.path }}" --out ai-debt-report.md --html ai-debt-report.html --sarif ai-debt-results.sarif --json ai-debt-scores.json)
+        ARGS=("${{ inputs.path }}" --out ai-debt-report.md --html ai-debt-report.html --sarif ai-debt-results.sarif --json ai-debt-scores.json --csv ai-debt-findings.csv)
         if [ -n "${{ inputs.fail-on-score }}" ]; then
           ARGS+=(--fail-on-score "${{ inputs.fail-on-score }}")
         fi
@@ -111,6 +111,7 @@ runs:
         path: |
           ai-debt-report.md
           ai-debt-report.html
+          ai-debt-findings.csv
 
     - name: Fail the check if the scan exited non-zero
       shell: bash

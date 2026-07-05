@@ -484,6 +484,48 @@ function renderSarif(semgrepResults, banditResults, repoRoot) {
   };
 }
 
+// CSV is the "basic Excel format" ask — it opens natively in Excel, Google
+// Sheets, and Numbers with zero setup, and needs no new dependency (a
+// hand-rolled RFC 4180 quoting rule is a few lines; a full library would be
+// overkill for one flat table). One row per finding across every tool that
+// actually ran, so the whole thing is filterable/sortable by column in a
+// spreadsheet — the same "every finding, not a sample" principle as the
+// Markdown/HTML report's "All Findings" section.
+function csvEscape(value) {
+  const s = value === null || value === undefined ? "" : String(value);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function renderCsv({ top, bandit, historicalSecrets, dependencyVulns }) {
+  const header = ["source", "severity", "rule_id", "file", "line", "message", "weight"];
+  const rows = [header];
+
+  for (const f of top) {
+    rows.push(["semgrep", f.severity || "", f.rule || "", f.path || "", f.line ?? "", f.message || "", f.weight ?? ""]);
+  }
+
+  if (bandit) {
+    for (const f of bandit.top) {
+      rows.push(["bandit", f.severity || "", f.testId || "", f.file || "", f.line ?? "", f.text || "", ""]);
+    }
+  }
+
+  if (historicalSecrets) {
+    for (const l of historicalSecrets.leaks) {
+      rows.push(["gitleaks", "HIGH", l.rule || "", l.file || "", l.line ?? "", `secret leaked in commit ${l.commit || "unknown"}`, ""]);
+    }
+  }
+
+  if (dependencyVulns) {
+    for (const p of dependencyVulns.packages) {
+      const message = `${p.name}@${p.version} (${p.ecosystem}) — ${p.vulnIds.join(", ")}${p.fixVersions.length ? ` — fix: ${p.fixVersions.join(", ")}` : ""}`;
+      rows.push([`${p.ecosystem}-audit`, "HIGH", p.vulnIds[0] || "", p.name || "", "", message, ""]);
+    }
+  }
+
+  return rows.map((row) => row.map(csvEscape).join(",")).join("\n") + "\n";
+}
+
 function renderMarkdown({ composite, tier, technical, duplication, historicalSecrets, bandit, dependencyVulns, cognitive, intent, top, repoPath, weights }) {
   const lines = [];
   lines.push(`# AI-Debt Report — ${repoPath}`);
@@ -768,7 +810,7 @@ function main() {
       "Usage: node score.js --semgrep semgrep.json --gitmine gitmine.json " +
         "[--jscpd jscpd-report.json] [--gitleaks gitleaks.json] [--bandit bandit.json] " +
         "[--pipaudit pip-audit.json] [--npmaudit npm-audit.json] [--out report.md] [--html report.html] " +
-        "[--json raw.json] [--sarif results.sarif] [--fail-on-score N] [--files-scanned N]"
+        "[--json raw.json] [--sarif results.sarif] [--csv findings.csv] [--fail-on-score N] [--files-scanned N]"
     );
     process.exit(1);
   }
@@ -907,6 +949,12 @@ function main() {
     const sarif = renderSarif(semgrepResults, banditResults, repoRoot);
     fs.writeFileSync(args.sarif, JSON.stringify(sarif, null, 2));
     console.error(`SARIF written to ${args.sarif}`);
+  }
+
+  if (args.csv) {
+    const csv = renderCsv({ top, bandit, historicalSecrets, dependencyVulns });
+    fs.writeFileSync(args.csv, csv);
+    console.error(`CSV written to ${args.csv}`);
   }
 
   // Non-zero exit lets CI treat "AI-debt score too high" as a failed check,
