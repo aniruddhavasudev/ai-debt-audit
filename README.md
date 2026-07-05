@@ -191,4 +191,6 @@ It's full of fake credentials — a placeholder API key, AWS's own example acces
 
 Honest version: the scoring weights (why technical debt counts for 50% and not 40%, why 20% duplication maxes out the duplication score) are a first pass, not something derived from a pile of calibration data yet. I tested it against a handful of real repos while building it and found real bugs this way — the "missing auth check" rule used to false-positive on any app using centralized middleware for auth, which is most of them, until I added a check for that. There's probably more like it I haven't found yet.
 
+See [CALIBRATION.md](CALIBRATION.md) for the actual data behind that claim — real scores from real repos, including a finding that a shallow git clone alone can move a repo from "Low risk" to "Medium risk" with zero code changes, and a bug (found via this repo's own self-scan and fixed same-day) where CI bot commits were fooling the knowledge-concentration score.
+
 If you run this against your own repo and a finding looks wrong, that's more useful to me right now than a star.

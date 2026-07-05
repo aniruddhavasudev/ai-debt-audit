@@ -19,6 +19,7 @@ import {
   scoreBandit,
   scoreDependencyVulnerabilities,
   combineTechnicalDebt,
+  scoreCognitiveDebt,
 } from "./score.js";
 
 test("teamSizeDampingFactor — 1 author means zero, not a knowledge-silo signal", () => {
@@ -140,4 +141,25 @@ test("combineTechnicalDebt — a clean bill from every tool scores 0, not some n
     { score: 0 }
   );
   assert.equal(allClean, 0);
+});
+
+test("scoreCognitiveDebt — a bot author (e.g. github-actions[bot]) does not count toward team size", () => {
+  // Found via this repo's own self-scan: a solo human + a CI bot's badge-
+  // update commits pushed totalAuthors to 2, which is enough to start
+  // un-damping the score, even though the bot distributes zero real
+  // knowledge. Two real humans should un-dampen; one human + one bot
+  // should not.
+  const soloPlusBot = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 1.0 },
+    commitStats: { authorCounts: { "Solo Builder": 10, "github-actions[bot]": 3 } },
+  });
+  assert.equal(soloPlusBot.totalAuthors, 1, "the bot should not be counted as a second author");
+  assert.equal(soloPlusBot.score, 0, "one real author (bot excluded) should still fully damp the score");
+
+  const twoRealHumans = scoreCognitiveDebt({
+    busFactorStats: { busFactorRiskRatio: 1.0 },
+    commitStats: { authorCounts: { "Alice": 10, "Bob": 3, "dependabot[bot]": 5 } },
+  });
+  assert.equal(twoRealHumans.totalAuthors, 2, "two real humans should count even alongside a bot");
+  assert.ok(twoRealHumans.score > 0, "two real humans should partially un-damp the score");
 });
