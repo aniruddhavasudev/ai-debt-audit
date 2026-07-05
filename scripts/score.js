@@ -185,6 +185,18 @@ function scoreDuplication(jscpdResults) {
     duplicatedLines: jscpdResults.statistics?.total?.duplicatedLines ?? 0,
     totalLines: jscpdResults.statistics?.total?.lines ?? 0,
     clones: jscpdResults.statistics?.total?.clones ?? 0,
+    // Every clone pair, not just the aggregate count — jscpd already knows
+    // exactly which two files/line-ranges match, and throwing that away
+    // left the report saying "13 clone pairs" with no way to find them.
+    clonePairs: (jscpdResults.duplicates || []).map((d) => ({
+      firstFile: d.firstFile?.name,
+      firstStart: d.firstFile?.start,
+      firstEnd: d.firstFile?.end,
+      secondFile: d.secondFile?.name,
+      secondStart: d.secondFile?.start,
+      secondEnd: d.secondFile?.end,
+      lines: d.lines,
+    })),
   };
 }
 
@@ -348,6 +360,8 @@ function scoreIntentDebt(gitMine) {
     genericMessageRatio,
     refactorRatio: gitMine.commitStats?.refactorRatio ?? 0,
     note: "refactorRatio is reported as a trend indicator, not currently scored — a shrinking refactor ratio over time is a leading signal of accumulating technical debt, but a single point-in-time snapshot doesn't tell you the trend direction.",
+    // Every commit actually flagged generic, not just the percentage.
+    genericCommits: gitMine.commitStats?.genericCommitList ?? [],
   };
 }
 
@@ -496,7 +510,7 @@ function csvEscape(value) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function renderCsv({ top, bandit, historicalSecrets, dependencyVulns }) {
+function renderCsv({ top, bandit, historicalSecrets, dependencyVulns, duplication, cognitive, intent }) {
   const header = ["source", "severity", "rule_id", "file", "line", "message", "weight"];
   const rows = [header];
 
@@ -520,6 +534,25 @@ function renderCsv({ top, bandit, historicalSecrets, dependencyVulns }) {
     for (const p of dependencyVulns.packages) {
       const message = `${p.name}@${p.version} (${p.ecosystem}) — ${p.vulnIds.join(", ")}${p.fixVersions.length ? ` — fix: ${p.fixVersions.join(", ")}` : ""}`;
       rows.push([`${p.ecosystem}-audit`, "HIGH", p.vulnIds[0] || "", p.name || "", "", message, ""]);
+    }
+  }
+
+  if (duplication) {
+    for (const p of duplication.clonePairs) {
+      const message = `${p.lines} duplicated lines with ${p.secondFile}:${p.secondStart}-${p.secondEnd}`;
+      rows.push(["jscpd", "INFO", "duplicate-code", p.firstFile || "", p.firstStart ?? "", message, ""]);
+    }
+  }
+
+  if (cognitive?.riskyFiles) {
+    for (const r of cognitive.riskyFiles) {
+      rows.push(["git-mine", "INFO", "single-author-file", r.file || "", "", `only ever touched by ${r.author}`, ""]);
+    }
+  }
+
+  if (intent?.genericCommits) {
+    for (const c of intent.genericCommits) {
+      rows.push(["git-mine", "INFO", "generic-commit-message", "", "", `${c.hash} by ${c.author}: "${c.subject}"`, ""]);
     }
   }
 
@@ -573,6 +606,9 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
   if (duplication) {
     lines.push(`\n### Duplication (jscpd)\n`);
     lines.push(`- ${duplication.percentage.toFixed(1)}% duplicated lines (${duplication.duplicatedLines}/${duplication.totalLines}) across ${duplication.clones} clone pairs — sub-score ${duplication.score}/100`);
+    for (const p of duplication.clonePairs) {
+      lines.push(`  - ${p.lines} lines: ${p.firstFile}:${p.firstStart}-${p.firstEnd} ↔ ${p.secondFile}:${p.secondStart}-${p.secondEnd}`);
+    }
   }
 
   if (historicalSecrets) {
@@ -601,10 +637,22 @@ function renderMarkdown({ composite, tier, technical, duplication, historicalSec
       `- ⚠ *Score damped heavily — with only ${cognitive.totalAuthors} total contributor(s), single-author-per-file is structural, not a debt signal.*`
     );
   }
+  if (cognitive.riskyFiles?.length) {
+    lines.push(`\nFiles only one person has ever touched:\n`);
+    for (const r of cognitive.riskyFiles) {
+      lines.push(`  - ${r.file} (${r.author})`);
+    }
+  }
 
   lines.push(`\n## Intent Debt (externalized rationale)\n`);
   lines.push(`- Generic/uninformative commit messages: ${(intent.genericMessageRatio * 100).toFixed(1)}% of commits`);
   lines.push(`- Refactor-commit ratio (trend indicator, not scored): ${(intent.refactorRatio * 100).toFixed(1)}%`);
+  if (intent.genericCommits?.length) {
+    lines.push(`\nCommits flagged as generic/uninformative:\n`);
+    for (const c of intent.genericCommits) {
+      lines.push(`  - \`${c.hash}\` ${c.author}: "${c.subject}"`);
+    }
+  }
 
   lines.push(`\n---\n*Methodology is a v1 heuristic pending calibration against real audited repos — see scripts/score.js for exact weights and formulas.*`);
 
@@ -764,7 +812,9 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
 
     ${
       duplication
-        ? `<div class="card"><h2>Duplication (jscpd)</h2><p>${duplication.percentage.toFixed(1)}% duplicated lines (${duplication.duplicatedLines}/${duplication.totalLines}) across ${duplication.clones} clone pairs — sub-score ${duplication.score}/100</p></div>`
+        ? `<div class="card"><h2>Duplication (jscpd)</h2><p>${duplication.percentage.toFixed(1)}% duplicated lines (${duplication.duplicatedLines}/${duplication.totalLines}) across ${duplication.clones} clone pairs — sub-score ${duplication.score}/100</p>
+           ${duplication.clonePairs.length ? `<ul>${duplication.clonePairs.map((p) => `<li>${p.lines} lines: <code>${escapeHtml(p.firstFile)}:${p.firstStart}-${p.firstEnd}</code> ↔ <code>${escapeHtml(p.secondFile)}:${p.secondStart}-${p.secondEnd}</code></li>`).join("")}</ul>` : ""}
+           </div>`
         : ""
     }
 
@@ -788,12 +838,14 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
       <p>Bus-factor risk ratio (raw): ${(cognitive.busFactorRiskRatio * 100).toFixed(1)}% of tracked files have had only one author ever<br>
       Total distinct authors: ${cognitive.totalAuthors} (team-size damping factor: ${cognitive.dampingFactor.toFixed(2)})</p>
       ${cognitive.totalAuthors <= 2 ? `<p class="dampened">⚠ Score damped heavily — with only ${cognitive.totalAuthors} total contributor(s), single-author-per-file is structural, not a debt signal.</p>` : ""}
+      ${cognitive.riskyFiles?.length ? `<p><strong>Files only one person has ever touched:</strong></p><ul>${cognitive.riskyFiles.map((r) => `<li><code>${escapeHtml(r.file)}</code> (${escapeHtml(r.author)})</li>`).join("")}</ul>` : ""}
     </div>
 
     <div class="card">
       <h2>Intent Debt (externalized rationale)</h2>
       <p>Generic/uninformative commit messages: ${(intent.genericMessageRatio * 100).toFixed(1)}% of commits<br>
       Refactor-commit ratio (trend indicator, not scored): ${(intent.refactorRatio * 100).toFixed(1)}%</p>
+      ${intent.genericCommits?.length ? `<p><strong>Commits flagged as generic/uninformative:</strong></p><ul>${intent.genericCommits.map((c) => `<li><code>${escapeHtml(c.hash)}</code> ${escapeHtml(c.author)}: "${escapeHtml(c.subject)}"</li>`).join("")}</ul>` : ""}
     </div>
 
     <footer>Methodology is a v1 heuristic pending calibration against real audited repos.</footer>
@@ -952,7 +1004,7 @@ function main() {
   }
 
   if (args.csv) {
-    const csv = renderCsv({ top, bandit, historicalSecrets, dependencyVulns });
+    const csv = renderCsv({ top, bandit, historicalSecrets, dependencyVulns, duplication, cognitive, intent });
     fs.writeFileSync(args.csv, csv);
     console.error(`CSV written to ${args.csv}`);
   }

@@ -29,19 +29,24 @@ function git(repoPath, args) {
 
 function mineCommitMessages(repoPath) {
   // %x1f is a field separator that will never appear in a commit subject
-  const raw = git(repoPath, ["log", "--no-merges", "--pretty=format:%an%x1f%s"]);
+  const raw = git(repoPath, ["log", "--no-merges", "--pretty=format:%h%x1f%an%x1f%s"]);
   const lines = raw.split("\n").filter(Boolean);
 
   let refactorCommits = 0;
   let genericMessageCommits = 0;
   const authorCounts = {};
+  // Every commit actually flagged generic, not just the count -- a report
+  // meant to be evidence should let a reader see *which* commits, not just
+  // trust a percentage (same principle as not silently capping findings).
+  const genericCommitList = [];
 
   for (const line of lines) {
-    const [author, subject] = line.split("");
+    const [hash, author, subject] = line.split("");
     authorCounts[author] = (authorCounts[author] || 0) + 1;
     if (REFACTOR_RE.test(subject)) refactorCommits++;
     if (GENERIC_MSG_RE.test(subject.trim()) || subject.trim().length < 6) {
       genericMessageCommits++;
+      genericCommitList.push({ hash, author, subject });
     }
   }
 
@@ -52,6 +57,7 @@ function mineCommitMessages(repoPath) {
     genericMessageCommits,
     genericMessageRatio: lines.length ? genericMessageCommits / lines.length : 0,
     authorCounts,
+    genericCommitList,
   };
 }
 
@@ -80,8 +86,15 @@ function mineBusFactor(repoPath) {
   }
 
   let singleAuthorFiles = 0;
-  for (const authors of fileAuthors.values()) {
-    if (authors.size === 1) singleAuthorFiles++;
+  // Every single-author file and who owns it, not just the count — this
+  // is the actual actionable list ("here is what to pair on"), the ratio
+  // alone is just a temperature reading.
+  const riskyFiles = [];
+  for (const [file, authors] of fileAuthors.entries()) {
+    if (authors.size === 1) {
+      singleAuthorFiles++;
+      riskyFiles.push({ file, author: [...authors][0] });
+    }
   }
 
   const totalFiles = fileAuthors.size;
@@ -92,6 +105,7 @@ function mineBusFactor(repoPath) {
     // ever touched — the person most likely to be the only one who
     // understands why an AI-assisted change was made this way.
     busFactorRiskRatio: totalFiles ? singleAuthorFiles / totalFiles : 0,
+    riskyFiles,
   };
 }
 
