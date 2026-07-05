@@ -52,8 +52,12 @@ jobs:
 
       - name: Commit the updated badge if it changed
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Commit as the repo owner, not github-actions[bot] — a bot author
+          # inflates apparent team size in git-history analysis (this tool's
+          # own scoreCognitiveDebt excludes [bot] authors for exactly this
+          # reason) and clutters the contributors graph.
+          git config user.name "aniruddhavasudev"
+          git config user.email "31285273+aniruddhavasudev@users.noreply.github.com"
           if ! git diff --quiet -- badge.json; then
             git add badge.json
             git commit -m "chore: update self-scan AI-debt badge [skip ci]"
