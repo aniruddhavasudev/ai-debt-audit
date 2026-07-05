@@ -8,7 +8,7 @@
 | Semgrep registry packs — `p/django`, `p/flask`, `p/golang`, `p/java` | Broader framework-specific coverage the community registry already does well (`p/spring` doesn't exist as a pack, so Spring gets custom rules only) |
 | **Bandit** | Python security linting — hardcoded passwords, `pickle.loads`, etc. |
 | **pip-audit** | Pinned Python dependency versions vs. known CVEs |
-| **npm audit** | Same for JS/TS, run directly against `package-lock.json` — never installs the target's dependencies, so it never executes an untrusted repo's install scripts |
+| **npm audit** | Same for JS/TS, run against `package-lock.json` — and when a repo doesn't commit one (most JS libraries), a lockfile is derived from `package.json` in a temp directory with `--package-lock-only --ignore-scripts`, so the scan still never installs anything or executes an untrusted repo's install scripts |
 | **jscpd** | Copy-paste detection |
 | **gitleaks** | Secrets anywhere in git history, not just the current snapshot — a key committed and deleted three months ago still counts |
 
