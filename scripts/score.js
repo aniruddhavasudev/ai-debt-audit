@@ -824,7 +824,9 @@ function renderHtml({ composite, tier, technical, duplication, historicalSecrets
             historicalSecrets.leakCount === 0
               ? "None found — sub-score 0/100"
               : `<strong style="color:#dc2626">${historicalSecrets.leakCount} leaked secret(s) found in git history</strong> — sub-score ${historicalSecrets.score}/100`
-          }</p></div>`
+          }</p>
+           ${historicalSecrets.leakCount > 0 ? `<ul>${historicalSecrets.leaks.map((l) => `<li><code>${escapeHtml(l.rule)}</code> in <code>${escapeHtml(l.file)}:${l.line}</code> (commit ${escapeHtml(l.commit)})</li>`).join("")}</ul>` : ""}
+           </div>`
         : ""
     }
 
