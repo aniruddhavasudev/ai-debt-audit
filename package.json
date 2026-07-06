@@ -1,6 +1,6 @@
 {
   "name": "ai-debt-audit",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "Catches the garbage your AI assistant left behind — security shortcuts, secrets buried in git history, code nobody understands. One 0-100 score, 100% local, no LLM in the loop.",
   "keywords": [
     "ai",
@@ -39,7 +39,9 @@
   "scripts": {
     "gitmine": "node scripts/git-mine.js",
     "score": "node scripts/score.js",
-    "scan": "node bin/aidebt-scan.js"
+    "scan": "node bin/aidebt-scan.js",
+    "test": "node --test scripts/score.test.js && node scripts/test-degraded.js",
+    "prepublishOnly": "npm test"
   },
   "dependencies": {
     "jscpd": "^5.0.11"

@@ -1,7 +1,7 @@
 {
   "name": "ai-debt-audit",
   "description": "Catches the garbage your AI assistant left behind — security shortcuts, secrets buried in git history, code nobody understands. One 0-100 score, 100% local, no LLM in the loop.",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "author": {
     "name": "aniruddhavasudev"
   },
