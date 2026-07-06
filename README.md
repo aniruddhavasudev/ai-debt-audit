@@ -154,8 +154,8 @@ Honest list — these are measured, not hypothetical:
 
 ## Roadmap
 
-- **npm publish** so `npx ai-debt-audit` resolves without a clone (package is ready; name is reserved-free)
-- **GitHub Action marketplace listing** — the action exists and works from a ref; marketplace packaging is next
+- **npm publish** so `npx ai-debt-audit` resolves without a clone (package is ready, name is reserved-free — see [RELEASING.md](RELEASING.md))
+- **GitHub Action marketplace listing** — the action exists and works from a ref today; the Marketplace checkbox is the next step ([RELEASING.md](RELEASING.md))
 - **More detectors**: Rust and C# rule packs, lockfile-less Python dependency resolution via PyPI metadata, PR-comment output mode
 - **Hosted dashboard** for tracking scores across an org's repos over time (the CLI stays free and local; AGPL protects exactly this boundary)
 
