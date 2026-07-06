@@ -12,7 +12,7 @@
 #     with:
 #       fetch-depth: 0
 name: 'AI-Debt Audit'
-description: 'Finds hidden risks in AI-generated code — security gaps, shortcuts, and knowledge gaps. 100% private, runs on your machine.'
+description: 'Catches the garbage your AI assistant left behind — security shortcuts, secrets buried in git history, code nobody understands. 100% local, no LLM in the loop.'
 author: 'aniruddhavasudev'
 branding:
   icon: 'search'

@@ -39,7 +39,9 @@
   "scripts": {
     "gitmine": "node scripts/git-mine.js",
     "score": "node scripts/score.js",
-    "scan": "node bin/aidebt-scan.js"
+    "scan": "node bin/aidebt-scan.js",
+    "test": "node --test scripts/score.test.js && node scripts/test-degraded.js",
+    "prepublishOnly": "npm test"
   },
   "dependencies": {
     "jscpd": "^5.0.11"
